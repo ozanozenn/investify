@@ -182,7 +182,7 @@ function CompanyDetail({
           <BigScore score={scores.overall} label="Overall" />
           <div className="grid gap-3 sm:grid-cols-2">
             {(["growth", "profitability", "balance_sheet", "cash_flow", "valuation"] as const).map((key) => (
-              <ScoreBar key={key} label={CATEGORY_LABEL[key]} score={(scores[key] as CategoryScore).score} />
+              <ScoreBar key={key} label={CATEGORY_LABEL[key] ?? key} score={(scores[key] as CategoryScore).score} />
             ))}
           </div>
         </CardBody>
@@ -385,6 +385,11 @@ function HeaderSection({
             {company.industry && <Badge tone="neutral">{company.industry}</Badge>}
           </div>
           <p className="mt-1 text-sm text-muted">{company.name}</p>
+          {company.description && (
+            <p className="mt-2 max-w-xl text-xs leading-relaxed text-muted line-clamp-2">
+              {company.description}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-6">
