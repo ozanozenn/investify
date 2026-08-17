@@ -1,0 +1,42 @@
+# Non-secret tunables for the analysis pipeline (roadmap section 54).
+# Changing these does not require a code change or a new engine version
+# unless the *formula* changes (see docs/FINANCIAL_ENGINE.md).
+
+horizons:
+  short_term_months: 6
+  medium_term_months: 24
+  long_term_months_min: 24
+  long_term_months_max: 60
+
+history:
+  annual_years: 5
+  quarterly_quarters: 8
+
+valuation:
+  historical_lookback_years: 5
+
+macro:
+  series:
+    - code: policy_rate
+      label: "TCMB Politika Faizi"
+    - code: cpi_yoy
+      label: "TÜFE (Yıllık)"
+    - code: usdtry
+      label: "USD/TRY"
+    - code: eurtry
+      label: "EUR/TRY"
+
+kap:
+  lookback_days: 90
+  max_disclosures_returned: 15
+
+data_quality:
+  weights:
+    completeness: 0.5
+    freshness: 0.3
+    metric_coverage: 0.2
+  freshness_stale_after_hours:
+    market: 24
+    financials: 24 # relative to as_of period publication, not fetch
+    macro: 48
+    kap: 24

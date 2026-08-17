@@ -1,0 +1,110 @@
+# Central, versioned scoring definition (roadmap sections 3.9 / 17 / 60).
+#
+# Every sub-score is a sum of "components". Each component maps one metric
+# value to a point contribution via piecewise-linear interpolation over
+# `breakpoints: [[metric_value, points], ...]` (ascending metric_value;
+# points may ascend or descend — descending breakpoints implement "lower is
+# better" metrics like leverage). Values outside the range clamp to the
+# nearest breakpoint's points. If a metric required by a component is
+# missing, that component is excluded and the sub-score is rescaled to /100
+# over the remaining available max points (never silently defaulted) — see
+# `scoring_engine/engine.py:score_category`. The excluded component is
+# listed in the score's `reasons` with contribution 0 and a note.
+#
+# `financial_engine`/`valuation_engine` output values as fractions
+# (0.15 == 15%) except explicit ratios (Net Debt/EBITDA, P/E, ...), which
+# are plain multiples.
+
+version: v1
+
+overall_weights:
+  growth: 0.25
+  profitability: 0.20
+  balance_sheet: 0.20
+  cash_flow: 0.15
+  valuation: 0.20
+
+categories:
+  growth:
+    label: "Growth"
+    components:
+      - metric: revenue_growth_yoy
+        label: "Revenue Growth YoY"
+        max_points: 30
+        breakpoints: [[-0.20, 0], [0.0, 10], [0.15, 22], [0.30, 30]]
+      - metric: ebitda_growth_yoy
+        label: "EBITDA Growth YoY"
+        max_points: 30
+        breakpoints: [[-0.20, 0], [0.0, 10], [0.15, 22], [0.30, 30]]
+      - metric: net_income_growth_yoy
+        label: "Net Income Growth YoY"
+        max_points: 25
+        breakpoints: [[-0.30, 0], [0.0, 8], [0.15, 18], [0.30, 25]]
+      - metric: growth_consistency
+        label: "Growth Consistency"
+        max_points: 15
+        breakpoints: [[0.0, 0], [0.5, 6], [1.0, 15]]
+
+  profitability:
+    label: "Profitability"
+    components:
+      - metric: ebitda_margin
+        label: "EBITDA Margin"
+        max_points: 35
+        breakpoints: [[0.0, 0], [0.10, 15], [0.20, 28], [0.35, 35]]
+      - metric: net_margin
+        label: "Net Margin"
+        max_points: 35
+        breakpoints: [[0.0, 0], [0.05, 15], [0.12, 28], [0.20, 35]]
+      - metric: roe
+        label: "Return on Equity"
+        max_points: 30
+        breakpoints: [[0.0, 0], [0.10, 12], [0.20, 24], [0.30, 30]]
+
+  balance_sheet:
+    label: "Balance Sheet"
+    components:
+      - metric: net_debt_to_ebitda
+        label: "Net Debt / EBITDA"
+        max_points: 45
+        breakpoints: [[0.0, 45], [1.0, 38], [2.0, 28], [3.0, 15], [5.0, 0]]
+      - metric: debt_to_equity
+        label: "Debt / Equity"
+        max_points: 30
+        breakpoints: [[0.0, 30], [0.5, 24], [1.0, 15], [2.0, 5], [4.0, 0]]
+      - metric: equity_ratio
+        label: "Equity / Total Assets"
+        max_points: 25
+        breakpoints: [[-0.5, 0], [0.0, 10], [0.20, 20], [0.40, 25]]
+
+  cash_flow:
+    label: "Cash Flow"
+    components:
+      - metric: ocf_margin
+        label: "Operating Cash Flow Margin"
+        max_points: 20
+        breakpoints: [[-0.05, 0], [0.0, 8], [0.10, 16], [0.20, 20]]
+      - metric: fcf_margin
+        label: "FCF Margin"
+        max_points: 50
+        breakpoints: [[-0.10, 0], [0.0, 15], [0.08, 35], [0.15, 50]]
+      - metric: fcf_conversion
+        label: "FCF Conversion (FCF/Net Income)"
+        max_points: 30
+        breakpoints: [[0.0, 0], [0.5, 15], [0.8, 24], [1.2, 30]]
+
+  valuation:
+    label: "Valuation"
+    components:
+      - metric: pe_vs_history_ratio
+        label: "P/E vs Historical Median"
+        max_points: 40
+        breakpoints: [[0.5, 40], [0.8, 34], [1.0, 25], [1.3, 12], [1.8, 0]]
+      - metric: ev_ebitda_vs_history_ratio
+        label: "EV/EBITDA vs Historical Median"
+        max_points: 40
+        breakpoints: [[0.5, 40], [0.8, 34], [1.0, 25], [1.3, 12], [1.8, 0]]
+      - metric: pb_vs_history_ratio
+        label: "P/B vs Historical Median"
+        max_points: 20
+        breakpoints: [[0.5, 20], [0.8, 17], [1.0, 12], [1.3, 6], [1.8, 0]]
