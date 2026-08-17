@@ -38,6 +38,7 @@ dev = [
     "pytest-mock>=3.14,<4",
     "respx>=0.21,<0.22",
     "ruff>=0.6,<0.7",
+    "aiosqlite>=0.20,<0.21",
 ]
 
 [tool.pytest.ini_options]

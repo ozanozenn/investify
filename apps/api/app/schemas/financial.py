@@ -13,6 +13,19 @@ class PeriodData(BaseModel):
     values: dict[str, float]
 
 
+class FinancialHistoryPoint(BaseModel):
+    """One annual data point for the Company Detail "Financial Performance"
+    charts (roadmap section 3.14). Distinct from `FinancialMetrics`, which
+    is a single point-in-time snapshot of ratios — this is the raw
+    multi-year series the UI plots."""
+
+    fiscal_year: int
+    revenue: float | None = None
+    ebitda: float | None = None
+    net_income: float | None = None
+    free_cash_flow: float | None = None
+
+
 class FinancialMetrics(BaseModel):
     """Deterministic output of financial_engine (roadmap section 10 / 3.5).
     Every field is None (never guessed) when its required inputs are

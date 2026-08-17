@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --surface-hover: #f0f2f5;
+  --border: #e3e6eb;
+  --foreground: #12151c;
+  --muted: #667085;
+  --accent: #2563eb;
+  --positive: #15803d;
+  --negative: #dc2626;
+  --warning: #b45309;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.dark {
+  --background: #0a0d13;
+  --surface: #12161f;
+  --surface-hover: #1a1f2b;
+  --border: #242938;
+  --foreground: #e7e9ee;
+  --muted: #8b93a7;
+  --accent: #5b8def;
+  --positive: #34d399;
+  --negative: #f87171;
+  --warning: #fbbf24;
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+::selection {
+  background: var(--accent);
+  color: white;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 6px;
+}

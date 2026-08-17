@@ -23,3 +23,4 @@ pytest-asyncio<0.25,>=0.24
 pytest-mock<4,>=3.14
 respx<0.22,>=0.21
 ruff<0.7,>=0.6
+aiosqlite<0.21,>=0.20
