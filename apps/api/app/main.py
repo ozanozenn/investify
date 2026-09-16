@@ -6,7 +6,7 @@ import uuid
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routers import auth, companies, health
+from app.api.routers import auth, companies, comparisons, dcf, health, peers
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, request_id_ctx
 
@@ -55,3 +55,6 @@ async def request_context_middleware(request: Request, call_next):
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(companies.router)
+app.include_router(dcf.router)
+app.include_router(peers.router)
+app.include_router(comparisons.router)

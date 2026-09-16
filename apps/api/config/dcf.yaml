@@ -1,0 +1,53 @@
+# Non-secret tunables for the DCF engine (roadmap section 13).
+# Changing these does not require a code change or a new engine version
+# unless the *formula* changes (see docs/FINANCIAL_ENGINE.md for the
+# sibling convention this file follows).
+#
+# CAPM/WACC building blocks below are illustrative BIST-context defaults
+# used only when a company's own market data is insufficient to derive a
+# WACC (see valuation_engine/dcf.py `wacc_defaulted_insufficient_market_data`).
+# They are NOT a claim of macroeconomic accuracy and should be revisited
+# periodically against the prevailing Turkish rate environment.
+
+capm:
+  risk_free_rate: 0.28 # illustrative TR 10y-equivalent nominal risk-free proxy
+  equity_risk_premium: 0.06
+  default_beta: 1.0
+  pretax_cost_of_debt: 0.35 # illustrative BIST-context nominal borrowing cost
+  default_tax_rate: 0.25 # Turkish corporate tax rate baseline
+
+terminal_growth_default: 0.15 # illustrative long-run nominal growth (inflation-heavy TRY context)
+projection_years: 5
+
+# Used as the BASE case assumption whenever it cannot be derived from a
+# company's own historical periods (fewer than 2 usable annual periods for
+# growth, or the relevant canonical field missing for margin/D&A/capex) and
+# is not explicitly overridden. Each fallback is flagged in
+# `DcfResult.missing_fields` (e.g. "revenue_growth_defaulted_from_config").
+baseline_defaults:
+  revenue_growth: 0.20
+  ebit_margin: 0.15
+  da_percent_of_revenue: 0.04
+  capex_percent_of_revenue: 0.05
+  working_capital_change_percent_of_revenue: 0.01
+
+# Applied to the BASE case's derived-or-overridden revenue_growth_rate and
+# ebit_margin to produce Bear/Bull. Base itself is never adjusted.
+scenario_deltas:
+  bear:
+    revenue_growth: -0.05
+    ebit_margin: -0.02
+  bull:
+    revenue_growth: 0.05
+    ebit_margin: 0.02
+
+# Grid for the WACC x Terminal Growth sensitivity matrix (roadmap section 13).
+sensitivity_matrix:
+  wacc_range:
+    min: 0.20
+    max: 0.35
+    step: 0.025
+  terminal_growth_range:
+    min: 0.05
+    max: 0.20
+    step: 0.025

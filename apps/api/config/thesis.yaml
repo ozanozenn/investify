@@ -1,0 +1,42 @@
+# Thesis tracking / snapshot diff tunables (roadmap sections 25/26).
+#
+# Two independent knobs live here:
+#
+# 1. `notable_change_thresholds` — per-metric absolute-delta thresholds used
+#    by the "What changed?" view (section 26) to hide noise: a metric's
+#    delta is flagged `is_notable` only when |current - previous| >= its
+#    threshold. Units match what the engines actually emit (see
+#    docs/FINANCIAL_ENGINE.md / SCORING.md): growth/margin/ROE metrics are
+#    fractions (0.03 == 3 percentage points), Net Debt/EBITDA is a plain
+#    multiple, overall_score is on the 0-100 scale.
+#
+#    Values below are a judgement call, not derived from data: 2-3
+#    percentage points for margin/growth/ROE metrics is roughly "outside
+#    normal quarter-to-quarter noise for a BIST industrial/consumer name";
+#    0.2x for Net Debt/EBITDA is roughly a quarter's worth of typical
+#    deleveraging/releveraging; 3.0 points on the 0-100 overall score is
+#    ~3% of the full scale; 2.0x on P/E is roughly one "notch" of re-rating
+#    for a mid-multiple BIST name. Revisit once real refresh history exists
+#    to see how much these actually move run-to-run.
+#
+# 2. `thesis_strength` — thresholds on `overall_score_delta` (current minus
+#    previous overall score, 0-100 scale) that decide the STRENGTHENED /
+#    WEAKENED / UNCHANGED verdict (section 25). +/-3 points was chosen to
+#    match the overall_score notable-change threshold above, so "thesis
+#    strengthened/weakened" and "overall score is a notable change" agree
+#    with each other by construction — anything smaller is treated as noise
+#    and reported UNCHANGED.
+
+version: v1
+
+notable_change_thresholds:
+  revenue_growth_yoy: 0.03
+  ebitda_margin: 0.02
+  net_debt_to_ebitda: 0.2
+  roe: 0.02
+  overall_score: 3.0
+  pe: 2.0
+
+thesis_strength:
+  strengthened_at_or_above: 3.0
+  weakened_at_or_below: -3.0

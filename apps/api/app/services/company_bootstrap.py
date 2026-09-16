@@ -14,6 +14,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.company import Company, Industry, Sector, Ticker
 from app.providers.base import CompanyDataProvider
+from app.providers.company.taxonomy import normalize_sector_industry
 
 _COMPANY_WITH_INDUSTRY = selectinload(Company.industry).selectinload(Industry.sector)
 
@@ -54,8 +55,9 @@ async def get_or_create_company(
         return company_result.scalar_one()
 
     profile = await provider.get_company_profile(symbol)
-    sector = await _get_or_create_sector(session, profile.get("sector") or "Diğer")
-    industry = await _get_or_create_industry(session, sector, profile.get("industry") or "Diğer")
+    sector_name, industry_name = normalize_sector_industry(profile.get("sector"), profile.get("industry"))
+    sector = await _get_or_create_sector(session, sector_name)
+    industry = await _get_or_create_industry(session, sector, industry_name)
 
     company = Company(
         name=profile["name"],

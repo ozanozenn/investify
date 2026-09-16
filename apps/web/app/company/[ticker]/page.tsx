@@ -5,8 +5,11 @@ import { AlertTriangle, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { DcfPanel } from "@/components/dcf-panel";
 import { Disclaimer } from "@/components/disclaimer";
+import { HistoricalComparisonPanel } from "@/components/historical-comparison-panel";
 import { OutlookCard } from "@/components/outlook-card";
+import { PeerComparisonPanel } from "@/components/peer-comparison-panel";
 import { SearchBox } from "@/components/search-box";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge, toneForScore } from "@/components/ui/badge";
@@ -245,6 +248,13 @@ function CompanyDetail({
           <ValuationTile label="EV/EBITDA" current={valuation.ev_ebitda} historical={valuation.ev_ebitda_historical_median} ratio={valuation.ev_ebitda_vs_history_ratio} />
         </CardBody>
       </Card>
+
+      <DcfPanel ticker={ticker} currentPrice={market.price} currency={market.currency} />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <HistoricalComparisonPanel ticker={ticker} />
+        <PeerComparisonPanel ticker={ticker} />
+      </div>
 
       <Card>
         <CardHeader title="Investment Thesis" />

@@ -45,6 +45,7 @@ from app.services.company_bootstrap import get_or_create_company
 from app.services.context_builder import build_context
 from app.services.data_quality import compute_data_quality
 from app.services.provider_bundle import ProviderBundle
+from app.valuation_engine.dcf import compute_dcf
 from app.valuation_engine.engine import compute_valuation
 
 logger = get_logger(__name__)
@@ -245,6 +246,18 @@ async def run_refresh(
             "pb_vs_history_ratio": valuation.pb_vs_history_ratio,
         }
         scores = compute_score(score_inputs, settings.scoring_engine_version)
+
+        # Base-case DCF ships with every refresh (roadmap section 13); the
+        # dedicated /analysis/dcf endpoint additionally supports on-demand
+        # recompute with user-overridden assumptions without a full refresh.
+        valuation.dcf = compute_dcf(
+            latest_period=annual_period_data[-1] if annual_period_data else None,
+            historical_periods=annual_period_data,
+            current_price=quote.price if quote else None,
+            market_cap=quote.market_cap if quote else None,
+            net_debt=metrics.net_debt,
+            shares_outstanding=quote.shares_outstanding if quote else None,
+        )
 
     await persistence.save_metric_snapshot(session, company.id, None, settings.financial_engine_version, metrics.model_dump(mode="json"))
     await persistence.save_valuation_snapshot(session, company.id, settings.valuation_engine_version, valuation.model_dump(mode="json"))

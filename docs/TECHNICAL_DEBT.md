@@ -84,3 +84,62 @@ block the Phase 1 Definition of Done; all are candidates for Phase 2+.
   value — acceptable only because this is a single local-network personal
   tool with the password itself living in a gitignored `.env`, never in
   code). Do not reuse this pattern if this ever becomes multi-user.
+
+## Phase 2 additions
+
+- **Sector/industry taxonomy was inconsistent across bootstrap paths,
+  silently breaking peer comparison — FIXED.**
+  `services/company_bootstrap.py` groups peers by exact string match on
+  `Industry.name`/`Sector.name`. The curated `providers/company/seed.py`
+  (8 validation tickers) uses hand-picked Turkish labels (e.g. THYAO:
+  `sector="Ulaştırma"`, `industry="Havayolu"`); every other ticker
+  bootstraps via live `yfinance`'s English GICS-like taxonomy (e.g. PGSUS:
+  `sector="Industrials"`, `industry="Airlines"`). Verified live: before the
+  fix, THYAO vs PGSUS — two real BIST airlines — produced zero peers
+  (`peer_group_basis="none"`) purely because the strings never matched,
+  even though `services/peer_comparison.py`'s grouping logic itself was
+  already correct (also verified live: SISE `"Sanayi"/"Cam"` vs EREGL
+  `"Sanayi"/"Demir Çelik"`, both seeded, correctly fell back to a
+  `"Sanayi"` sector match with a real computed median).
+  **Fix applied**: `providers/company/taxonomy.py` (new) translates
+  yfinance's raw `(sector, industry)` into the seed's canonical Turkish
+  taxonomy, keyed primarily by `industry` (more specific than `sector`
+  alone). `company_bootstrap.py` now calls
+  `normalize_sector_industry(...)` before creating/looking up
+  `Sector`/`Industry` rows. Re-verified live post-fix: THYAO and PGSUS now
+  both normalize to `("Ulaştırma", "Havayolu")` and correctly peer-match
+  (`peer_group_basis="industry"`, PGSUS score 74.9 vs THYAO 56.5).
+  **Remaining gap**: the translation table is deliberately not exhaustive
+  (same philosophy as `ticker_index.py`) — covers the seed set's own
+  industries plus a reasonable set of other common BIST-relevant
+  industries (steel, automotive, telecom, banking, refining, food &
+  beverage, REIT, mining, utilities, conglomerates/holding). An
+  unrecognized yfinance industry string still passes through unchanged
+  (never invented), so a newly-bootstrapped company in an uncovered
+  industry won't peer-match a seeded company until the table is extended —
+  add an entry to `_INDUSTRY_TRANSLATIONS` in `taxonomy.py` as new gaps are
+  found, same as extending `ticker_index.py`.
+- **DCF bear-case intrinsic value per share can go negative**
+  (`valuation_engine/dcf.py`) for companies with material net debt once
+  bear-scenario margin/growth deltas push several years of projected FCF
+  low enough that `enterprise_value - net_debt` goes negative. Verified
+  live against real THYAO data: bear ≈ -1.74 TRY/share vs base ≈ 1.55 vs
+  bull ≈ 5.68. This is an arguably-correct reflection of the model under
+  stress (a real DCF with enough leverage and pessimistic assumptions can
+  imply equity is underwater), not a crash or a `None`, but it was not
+  explicitly discussed against the roadmap spec and may read as broken to
+  an end user without a UI caveat. **Fix (Phase 2 frontend wave or a
+  follow-up)**: decide product-side whether to show a negative per-share
+  value as-is (with an explanatory tooltip) or clamp display at 0 with an
+  "implies negative equity value under these assumptions" label — a
+  numeric/formula bug, not established.
+- **This development machine had no working Python/Docker at session
+  start** (system `python3` broken via a stale Xcode Command Line Tools
+  shim, no `.venv`, no Docker). Python 3.11 was installed via Homebrew and
+  a fresh `apps/api/.venv` created; a missing `greenlet` pin (required by
+  SQLAlchemy's async engine, apparently present transitively on the
+  original Linux dev machine) was found and added to
+  `apps/api/pyproject.toml`. Live verification for this phase used SQLite
+  instead of Docker Postgres (no Docker available) — the same caveat as
+  the existing "Testing" note above, now doubly true until Docker is set
+  up on this machine.

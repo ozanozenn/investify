@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
+from app.schemas.dcf import DcfResult
+
 
 class ValuationMetrics(BaseModel):
     """Deterministic output of valuation_engine (roadmap section 12 / 3.6).
-    Phase 1 scope: relative valuation vs the company's own trailing history.
-    DCF is intentionally absent — see docs/PHASE_1_SCOPE.md — but this
-    schema has room to grow a `dcf: DcfResult | None` field later without
-    breaking consumers (ADR-001)."""
+    Phase 1 scope was relative valuation vs the company's own trailing
+    history; Phase 2 (roadmap section 13) adds `dcf`, computed separately
+    by `valuation_engine/dcf.py` and attached in `refresh_pipeline.py` —
+    exactly the growth path this schema's docstring anticipated
+    (ADR-001)."""
 
     pe: float | None = None
     pb: float | None = None
@@ -24,3 +27,5 @@ class ValuationMetrics(BaseModel):
 
     history_years_used: int = 0
     missing_fields: list[str] = []
+
+    dcf: DcfResult | None = None
