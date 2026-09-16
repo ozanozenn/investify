@@ -43,8 +43,14 @@ class Settings(BaseSettings):
     request_timeout_seconds: float = Field(default=15.0)
 
     # --- LLM ---
+    # Provider selection is automatic from which key is set (see
+    # services/provider_bundle.py): OpenAI takes priority if configured
+    # (the production/paid path), otherwise Gemini (a free-tier dev
+    # alternative — see docs/DATA_SOURCES.md), otherwise MockLLMProvider.
     openai_api_key: str | None = Field(default=None)
     openai_model: str = Field(default="gpt-4.1-mini")
+    gemini_api_key: str | None = Field(default=None)
+    gemini_model: str = Field(default="gemini-2.0-flash")
     llm_prompt_version: str = Field(default="company-analysis-v1")
 
     # --- Versions (section 79) ---
@@ -57,7 +63,7 @@ class Settings(BaseSettings):
 
     @property
     def is_llm_mocked(self) -> bool:
-        return not self.openai_api_key
+        return not (self.openai_api_key or self.gemini_api_key)
 
     @property
     def is_evds_mocked(self) -> bool:

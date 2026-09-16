@@ -13,7 +13,7 @@ dependencies = [
     "alembic>=1.13,<2",
     "asyncpg>=0.29,<0.30",
     "psycopg2-binary>=2.9,<3",
-    "httpx>=0.27,<0.28",
+    "httpx>=0.27,<0.29",
     "pandas>=2.2,<3",
     "numpy>=1.26,<2.1",
     "yfinance>=0.2.43,<0.3",
@@ -21,6 +21,7 @@ dependencies = [
     "PyYAML>=6.0,<7",
     "python-jose[cryptography]>=3.3,<4",
     "openai>=1.50,<2",
+    "google-genai>=1.0,<2",
     "tenacity>=9.0,<10",
     "python-multipart>=0.0.12,<0.1",
 ]

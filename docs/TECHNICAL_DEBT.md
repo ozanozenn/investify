@@ -85,6 +85,28 @@ block the Phase 1 Definition of Done; all are candidates for Phase 2+.
   tool with the password itself living in a gitignored `.env`, never in
   code). Do not reuse this pattern if this ever becomes multi-user.
 
+## LLM providers
+
+- **The real prompt-loading path (`OpenAIProvider`/now also
+  `GeminiProvider`) was silently broken since Phase 1 — FIXED.**
+  `Settings.llm_prompt_version` defaults to `"company-analysis-v1"`
+  (hyphenated) and `docs/LLM.md` documented that exact filename, but the
+  actual file on disk was `llm/prompts/company_analysis_v1.md`
+  (underscored) — `load_prompt_template()` would have raised
+  `LLMProviderError: unknown prompt version company-analysis-v1` on the
+  very first real (non-mock) refresh. This was never caught because no
+  environment this project has run in ever had a real `OPENAI_API_KEY`
+  configured — `MockLLMProvider` never touches the prompt file, so the
+  mismatch had zero real-world coverage until writing `GeminiProvider`'s
+  tests exercised the loader for the first time. **Fix**: renamed the file
+  to `llm/prompts/company-analysis-v1.md` to match the documented/coded
+  default (not the other way around, since `docs/LLM.md` and
+  `Settings.llm_prompt_version` already agreed with each other — only the
+  physical filename was the outlier); updated the one stale reference in
+  ADR-003. If you ever add a real `OPENAI_API_KEY`/`GEMINI_API_KEY` for
+  the first time, this is exactly the kind of only-hit-by-real-traffic gap
+  worth double-checking for elsewhere too.
+
 ## Phase 2 additions
 
 - **Sector/industry taxonomy was inconsistent across bootstrap paths,

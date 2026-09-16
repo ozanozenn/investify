@@ -15,7 +15,7 @@ the single most important architectural constraint of the whole project.
    `financial_engine` output, `scoring_engine` output, `valuation_engine`
    output, macro observations, KAP disclosures). The LLM layer has no DB
    session and no provider access (enforced by ADR-001's import rule).
-2. The prompt (`llm/prompts/company_analysis_v1.md`) instructs the model to
+2. The prompt (`llm/prompts/company-analysis-v1.md`) instructs the model to
    only use figures present in the supplied context and to leave a field
    empty/omit a claim rather than invent one.
 3. The LLM's only contract is: structured context in (typed) → structured

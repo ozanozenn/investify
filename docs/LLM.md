@@ -10,12 +10,14 @@ operational details.
 LLMProvider (app/llm/base.py)
     |
     +-- OpenAIProvider   (app/llm/openai_provider.py)  — real, used when OPENAI_API_KEY is set
-    +-- MockLLMProvider  (app/llm/mock_provider.py)     — deterministic fallback otherwise
+    +-- GeminiProvider   (app/llm/gemini_provider.py)   — real, free-tier dev alternative, used when
+    |                                                      OPENAI_API_KEY is unset but GEMINI_API_KEY is set
+    +-- MockLLMProvider  (app/llm/mock_provider.py)     — deterministic fallback if neither is set
 ```
 
 `services/provider_bundle.py` picks the implementation once, at startup,
-based on `Settings.openai_api_key`. Nothing else in the codebase imports
-the OpenAI SDK directly.
+based on which key is configured (OpenAI takes priority). Nothing else in
+the codebase imports the OpenAI or Gemini SDKs directly.
 
 ## OpenAI implementation
 
@@ -29,15 +31,35 @@ the OpenAI SDK directly.
 - A `message.refusal` (the model declining to answer) is treated as a
   hard failure, not silently swallowed.
 
+## Gemini implementation
+
+A free-tier alternative to OpenAI for local development (see
+`docs/DATA_SOURCES.md`), used only when `OPENAI_API_KEY` is unset and
+`GEMINI_API_KEY` is set.
+
+- Model: `Settings.gemini_model` (default `gemini-2.0-flash`).
+- Uses `google-genai`'s `response_schema=LLMAnalysisResult` +
+  `response_mime_type="application/json"` to request schema-constrained
+  JSON, but — unlike `OpenAIProvider`, which trusts the SDK's own
+  `.parsed` convenience — the raw `response.text` is always explicitly
+  re-validated with `LLMAnalysisResult.model_validate_json(...)`. A
+  malformed or empty response raises `LLMProviderError` (pipeline stage
+  marked FAILED), never silently accepted.
+- Same retry policy as `OpenAIProvider` (3x, exponential backoff).
+- Tested in `tests/unit/test_gemini_provider.py` against a mocked SDK
+  client (no real `GEMINI_API_KEY` in CI) — covers valid parse, empty
+  response, malformed JSON, schema mismatch, and SDK-level exceptions.
+
 ## Mock implementation
 
-Used automatically when `OPENAI_API_KEY` is unset. It is **not** a
-simulated LLM — it deterministically derives an outlook label from the
-already-computed `scores.overall` and echoes score-component reasons /
-recent KAP titles into the driver/risk/catalyst fields, with every text
-field prefixed `[MOCK LLM — no OPENAI_API_KEY set]`. This exists so the
-full pipeline (including the UI) is exercisable and testable without a
-paid API key, per roadmap section 92.
+Used automatically when neither `OPENAI_API_KEY` nor `GEMINI_API_KEY` is
+set. It is **not** a simulated LLM — it deterministically derives an
+outlook label from the already-computed `scores.overall` and echoes
+score-component reasons / recent KAP titles into the driver/risk/catalyst
+fields, with every text field prefixed
+`[MOCK LLM — no OPENAI_API_KEY or GEMINI_API_KEY set]`. This exists so
+the full pipeline (including the UI) is exercisable and testable without
+any paid API key, per roadmap section 92.
 
 ## Prompt versioning (section 42/79)
 

@@ -4,7 +4,7 @@ from app.llm.base import LLMProvider
 from app.schemas.context import StructuredAnalysisContext
 from app.schemas.llm_analysis import HorizonOutlook, LLMAnalysisResult
 
-_MOCK_PREFIX = "[MOCK LLM — no OPENAI_API_KEY set] "
+_MOCK_PREFIX = "[MOCK LLM — no OPENAI_API_KEY or GEMINI_API_KEY set] "
 
 
 def _outlook_from_score(score: float) -> str:
@@ -20,12 +20,12 @@ def _outlook_from_score(score: float) -> str:
 
 
 class MockLLMProvider(LLMProvider):
-    """Deterministic, clearly-labeled placeholder used when no
-    OPENAI_API_KEY is configured (ADR-002/003). Derives its (simplistic)
-    outlook straight from the already-computed overall score so the
-    pipeline is exercisable end-to-end without a paid API key — this is
-    NOT a substitute for real interpretation and is labeled as such in
-    every text field."""
+    """Deterministic, clearly-labeled placeholder used when neither
+    OPENAI_API_KEY nor GEMINI_API_KEY is configured (ADR-002/003). Derives
+    its (simplistic) outlook straight from the already-computed overall
+    score so the pipeline is exercisable end-to-end without any LLM key —
+    this is NOT a substitute for real interpretation and is labeled as
+    such in every text field."""
 
     code = "mock"
     model = "mock-v1"

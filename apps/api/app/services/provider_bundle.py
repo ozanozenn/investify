@@ -5,6 +5,7 @@ from functools import lru_cache
 
 from app.core.config import Settings, get_settings
 from app.llm.base import LLMProvider
+from app.llm.gemini_provider import GeminiProvider
 from app.llm.mock_provider import MockLLMProvider
 from app.llm.openai_provider import OpenAIProvider
 from app.providers.base import (
@@ -32,9 +33,14 @@ class ProviderBundle:
 
 
 def build_provider_bundle(settings: Settings) -> ProviderBundle:
+    # Provider selection is automatic from configured keys: OpenAI (paid,
+    # production) takes priority if set, then Gemini (free-tier dev
+    # alternative), otherwise the deterministic MockLLMProvider.
     llm: LLMProvider
     if settings.openai_api_key:
         llm = OpenAIProvider(api_key=settings.openai_api_key, model=settings.openai_model)
+    elif settings.gemini_api_key:
+        llm = GeminiProvider(api_key=settings.gemini_api_key, model=settings.gemini_model)
     else:
         llm = MockLLMProvider()
 

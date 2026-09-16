@@ -157,7 +157,7 @@ function CompanyDetail({
       )}
 
       <Card>
-        <CardHeader title="AI Executive Summary" subtitle={analysis._meta.llm_is_mocked ? "Mock LLM — OPENAI_API_KEY tanımlı değil" : `Model: ${analysis._meta.llm_model}`} />
+        <CardHeader title="AI Executive Summary" subtitle={analysis._meta.llm_is_mocked ? "Mock LLM — OPENAI_API_KEY veya GEMINI_API_KEY tanımlı değil" : `Model: ${analysis._meta.llm_model}`} />
         <CardBody>
           <p className="text-sm leading-relaxed text-foreground">{analysis.executive_summary}</p>
         </CardBody>
