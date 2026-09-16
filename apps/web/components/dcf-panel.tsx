@@ -39,19 +39,70 @@ interface FieldConfig {
   /** Percent-style fields are entered/displayed as whole percentages (12 for 0.12)
    * and converted to a fraction before being sent as an override. */
   isPercent: boolean;
+  help: string;
 }
 
 const FIELD_CONFIG: FieldConfig[] = [
-  { key: "revenue_growth_rate", label: "Gelir Büyümesi", isPercent: true },
-  { key: "ebit_margin", label: "FAVÖK/EBIT Marjı", isPercent: true },
-  { key: "tax_rate", label: "Vergi Oranı", isPercent: true },
-  { key: "da_percent_of_revenue", label: "Amortisman %", isPercent: true },
-  { key: "capex_percent_of_revenue", label: "Yatırım Harcaması %", isPercent: true },
-  { key: "working_capital_change_percent_of_revenue", label: "İşletme Sermayesi Değişimi %", isPercent: true },
-  { key: "wacc", label: "WACC", isPercent: true },
-  { key: "terminal_growth_rate", label: "Terminal Büyüme", isPercent: true },
-  { key: "net_debt", label: "Net Borç", isPercent: false },
-  { key: "shares_outstanding", label: "Hisse Sayısı", isPercent: false },
+  {
+    key: "revenue_growth_rate",
+    label: "Gelir Büyümesi",
+    isPercent: true,
+    help: "Şirketin gelirinin önümüzdeki her yıl ne kadar büyüyeceği varsayımı. Boş bırakırsan geçmiş verilerden tahmin edilir.",
+  },
+  {
+    key: "ebit_margin",
+    label: "FAVÖK/EBIT Marjı",
+    isPercent: true,
+    help: "Her 100 liralık satıştan, faiz ve vergi öncesi ne kadar faaliyet kârı kaldığı. Yüksek olması daha kârlı bir iş modeli demektir.",
+  },
+  {
+    key: "tax_rate",
+    label: "Vergi Oranı",
+    isPercent: true,
+    help: "Şirketin kârı üzerinden ödediği varsayılan kurumlar vergisi oranı.",
+  },
+  {
+    key: "da_percent_of_revenue",
+    label: "Amortisman %",
+    isPercent: true,
+    help: "Amortisman ve İtfa Payı — makine/bina gibi varlıkların değer kaybının muhasebeye yansıtılan payı, gelirin yüzdesi olarak. Nakit çıkışı değildir, bu yüzden nakit akışına geri eklenir.",
+  },
+  {
+    key: "capex_percent_of_revenue",
+    label: "Yatırım Harcaması %",
+    isPercent: true,
+    help: "CAPEX — şirketin yeni makine/tesis/ekipmana yaptığı yatırım harcamasının, gelirin yüzdesi olarak tahmini.",
+  },
+  {
+    key: "working_capital_change_percent_of_revenue",
+    label: "İşletme Sermayesi Değişimi %",
+    isPercent: true,
+    help: "Şirketin büyümek için stok/alacak gibi kalemlere bağlaması gereken ek nakdin, gelirin yüzdesi olarak tahmini.",
+  },
+  {
+    key: "wacc",
+    label: "WACC",
+    isPercent: true,
+    help: "Ağırlıklı Ortalama Sermaye Maliyeti — şirketin hem hissedarlarına hem de borç verenlerine ödemesi gereken 'ortalama getiri bedeli'. Gelecekteki nakit akışlarını bugüne indirgemek için kullanılır; yükseldikçe hesaplanan bugünkü değer düşer.",
+  },
+  {
+    key: "terminal_growth_rate",
+    label: "Terminal Büyüme",
+    isPercent: true,
+    help: "Tahmin ufkunun (birkaç yıl) ötesinde, şirketin sonsuza kadar sabit bir hızda büyüyeceği varsayılan oran. WACC'tan düşük olmalı, aksi halde hesap anlamsızlaşır.",
+  },
+  {
+    key: "net_debt",
+    label: "Net Borç",
+    isPercent: false,
+    help: "Toplam Borç eksi Nakit. Firma Değerinden bu tutar düşülerek hissedarlara kalan Özkaynak Değeri bulunur.",
+  },
+  {
+    key: "shares_outstanding",
+    label: "Hisse Sayısı",
+    isPercent: false,
+    help: "Şirketin toplam dolaşımdaki hisse senedi adedi. Özkaynak Değeri buna bölünerek hisse başına içsel değer bulunur.",
+  },
 ];
 
 /** Machine keys observed/expected in missing_fields -> short Turkish labels.
@@ -205,7 +256,10 @@ function ScenarioSummary({
     <div className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-[11px] text-muted">İçsel Değer / Hisse</div>
+          <div className="flex items-center gap-1 text-[11px] text-muted">
+            İçsel Değer / Hisse
+            <InfoTooltip text="DCF modelinin hesapladığı, bu senaryonun varsayımları altında bir hissenin 'gerçekte' etmesi gereken değer. Borsadaki güncel fiyatla karşılaştırmak, hissenin ucuz mu pahalı mı olduğuna dair bir fikir verir — kesin bir hedef fiyat değildir." />
+          </div>
           <div className={cn("mt-1 font-tabular text-3xl font-semibold", tone)}>
             {value === null ? "—" : formatCurrency(value, currency)}
           </div>
@@ -223,8 +277,16 @@ function ScenarioSummary({
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <StatTile label="Firma Değeri (EV)" value={formatCurrency(result.enterprise_value, currency, 0)} />
-          <StatTile label="Özkaynak Değeri" value={formatCurrency(result.equity_value, currency, 0)} />
+          <StatTile
+            label="Firma Değeri (EV)"
+            value={formatCurrency(result.enterprise_value, currency, 0)}
+            help="Enterprise Value — şirketin tamamını (hem hisseleri hem borcunu) satın almanın toplam maliyeti. Gelecekteki tüm nakit akışlarının bugünkü değerinin toplamıdır."
+          />
+          <StatTile
+            label="Özkaynak Değeri"
+            value={formatCurrency(result.equity_value, currency, 0)}
+            help="Firma Değerinden net borç düşüldükten sonra, sadece hissedarlara kalan değer. Bu tutar hisse sayısına bölünerek hisse başına içsel değer bulunur."
+          />
         </div>
       </div>
 
@@ -291,6 +353,7 @@ function AssumptionsForm({
                 />
               )}
               {field.isPercent && <span className="text-muted">(%)</span>}
+              <InfoTooltip text={field.help} />
             </span>
             <input
               type="number"

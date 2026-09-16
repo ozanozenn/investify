@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import {
   ComparisonApiError,
   compareSnapshots,
@@ -25,6 +26,15 @@ const METRIC_FORMATTERS: Record<string, (value: number | null) => string> = {
   net_debt_to_ebitda: (v) => formatMultiple(v),
   pe: (v) => formatNumber(v, 1),
   overall_score: (v) => formatNumber(v, 1),
+};
+
+const METRIC_HELP: Record<string, string> = {
+  revenue_growth_yoy: "Gelirin bir önceki yıla göre ne kadar arttığı/azaldığı.",
+  ebitda_margin: "Satışların yüzde kaçının faaliyet kârı (FAVÖK) olarak kaldığı — yükselmesi kârlılığın iyileştiği anlamına gelir.",
+  roe: "Özkaynak Getirisi — şirketin hissedar sermayesiyle ne kadar kâr ürettiği.",
+  net_debt_to_ebitda: "Net Borç/FAVÖK — borcun, şirketin yıllık faaliyet kârının kaç katı olduğu. Yükselmesi kaldıraç/risk arttı demektir.",
+  pe: "Fiyat/Kazanç oranı — hissenin, şirketin kârına göre ne kadar pahalı işlem gördüğü.",
+  overall_score: "Sistemin 0-100 arası genel özet puanı.",
 };
 
 function formatMetricValue(metric: string, value: number | null): string {
@@ -135,7 +145,9 @@ function DeltaTable({ deltas }: { deltas: MetricDelta[] }) {
           </tr>
         </thead>
         <tbody>
-          {deltas.map((d) => (
+          {deltas.map((d) => {
+            const help = METRIC_HELP[d.metric];
+            return (
             <tr
               key={d.metric}
               className={d.is_notable ? "border-t border-border bg-surface-hover" : "border-t border-border"}
@@ -149,13 +161,15 @@ function DeltaTable({ deltas }: { deltas: MetricDelta[] }) {
                     />
                   )}
                   {d.label}
+                  {help && <InfoTooltip text={help} />}
                 </span>
               </td>
               <td className="py-1.5 pr-3 font-tabular text-muted">{formatMetricValue(d.metric, d.previous)}</td>
               <td className="py-1.5 pr-3 font-tabular text-foreground">{formatMetricValue(d.metric, d.current)}</td>
               <td className="py-1.5 font-tabular text-foreground">{formatMetricDelta(d.metric, d.delta)}</td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -169,14 +183,20 @@ function ComparisonResult({ data }: { data: SnapshotDiffResult }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-4">
         <div>
-          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Thesis Strength</div>
+          <div className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted">
+            Thesis Strength
+            <InfoTooltip text="Genel skordaki değişime bakarak sistemin çıkardığı otomatik yargı: yatırım fikri iki analiz arasında güçlendi mi, zayıfladı mı, yoksa önemli bir şey değişmedi mi?" />
+          </div>
           <div className="flex items-center gap-2">
             <Badge tone={strength.tone}>{strength.label}</Badge>
           </div>
           <p className="mt-1 max-w-md text-xs text-muted">{data.thesis_strength_reason}</p>
         </div>
         <div>
-          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Değerleme</div>
+          <div className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted">
+            Değerleme
+            <InfoTooltip text="Hissenin P/E çarpanına bakılarak, iki analiz arasında borsada daha ucuz mu yoksa daha pahalı mı işlem görmeye başladığı." />
+          </div>
           <Badge tone={direction.tone}>{direction.label}</Badge>
         </div>
       </div>

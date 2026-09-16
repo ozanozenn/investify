@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useTheme } from "@/components/theme-provider";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 export interface YearValue {
   year: number;
@@ -20,11 +21,13 @@ export function MiniBarChart({
   data,
   colorVar = "--accent",
   currency,
+  help,
 }: {
   label: string;
   data: YearValue[];
   colorVar?: string;
   currency?: string;
+  help?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
@@ -82,7 +85,10 @@ export function MiniBarChart({
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between">
-        <span className="text-xs font-medium text-muted">{label}</span>
+        <span className="flex items-center gap-1 text-xs font-medium text-muted">
+          {label}
+          {help && <InfoTooltip text={help} />}
+        </span>
         {currency && <span className="text-[10px] text-muted">{currency}</span>}
       </div>
       {hasData ? (

@@ -14,12 +14,20 @@ import { SearchBox } from "@/components/search-box";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge, toneForScore } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { BigScore, ScoreBar } from "@/components/ui/score-bar";
 import { StatTile } from "@/components/ui/stat-tile";
 import { MiniBarChart } from "@/components/charts/mini-bar-chart";
 import { ApiError, getCompanyAnalysis, refreshCompanyAnalysis } from "@/lib/api";
 import { formatCompact, formatDateTime, formatMultiple, formatNumber, formatPercent, formatRelativeTime } from "@/lib/format";
 import type { CategoryScore } from "@/lib/types";
+
+const MACRO_HELP: Record<string, string> = {
+  policy_rate: "TCMB'nin belirlediği referans faiz oranı. Yüksek faiz genelde kredi/yatırım maliyetini artırır, ekonomiyi yavaşlatır.",
+  cpi_yoy: "Tüketici Fiyat Endeksi'nin yıllık değişimi — yani resmi enflasyon oranı.",
+  usdtry: "1 ABD Doları kaç Türk Lirası ediyor. Dövizle borcu/geliri olan şirketleri doğrudan etkiler.",
+  eurtry: "1 Euro kaç Türk Lirası ediyor. Dövizle borcu/geliri olan şirketleri doğrudan etkiler.",
+};
 
 const CATEGORY_LABELS: Record<string, string> = {
   FINANCIAL_RESULT: "Finansal Sonuç",
@@ -182,10 +190,19 @@ function CompanyDetail({
       <Card>
         <CardHeader title="Scorecard" subtitle={`Deterministic scoring engine ${versions.scoring_engine}`} />
         <CardBody className="grid gap-4 sm:grid-cols-[auto_1fr]">
-          <BigScore score={scores.overall} label="Overall" />
+          <BigScore
+            score={scores.overall}
+            label="Overall"
+            help="0-100 arası tek bir özet puan. Aşağıdaki 5 kategorinin ağırlıklı ortalamasıdır — şirketin sayılarla ne kadar sağlıklı göründüğünü tek bakışta özetler. Bir alım/satım tavsiyesi değildir."
+          />
           <div className="grid gap-3 sm:grid-cols-2">
             {(["growth", "profitability", "balance_sheet", "cash_flow", "valuation"] as const).map((key) => (
-              <ScoreBar key={key} label={CATEGORY_LABEL[key] ?? key} score={(scores[key] as CategoryScore).score} />
+              <ScoreBar
+                key={key}
+                label={CATEGORY_LABEL[key] ?? key}
+                score={(scores[key] as CategoryScore).score}
+                help={CATEGORY_HELP[key]}
+              />
             ))}
           </div>
         </CardBody>
@@ -198,24 +215,28 @@ function CompanyDetail({
             label="Revenue"
             colorVar="--accent"
             currency={market.currency}
+            help="Hasılat (Ciro) — şirketin dönem içinde sattığı ürün/hizmetlerden elde ettiği toplam gelir, hiçbir masraf düşülmeden."
             data={financial_history.map((h) => ({ year: h.fiscal_year, value: h.revenue }))}
           />
           <MiniBarChart
             label="EBITDA"
             colorVar="--positive"
             currency={market.currency}
+            help="FAVÖK (Faiz, Vergi, Amortisman Öncesi Kâr) — şirketin ana faaliyetlerinden ne kadar nakit üretebildiğini gösteren, borç/vergi yapısından bağımsız bir kârlılık ölçüsü."
             data={financial_history.map((h) => ({ year: h.fiscal_year, value: h.ebitda }))}
           />
           <MiniBarChart
             label="Net Income"
             colorVar="--warning"
             currency={market.currency}
+            help="Net Kâr — tüm giderler, faizler ve vergiler düşüldükten sonra şirkete kalan nihai kâr."
             data={financial_history.map((h) => ({ year: h.fiscal_year, value: h.net_income }))}
           />
           <MiniBarChart
             label="Free Cash Flow"
             colorVar="--accent"
             currency={market.currency}
+            help="Serbest Nakit Akışı — şirketin işletme faaliyetlerinden ürettiği nakitten yatırım harcamaları (CAPEX) düşüldükten sonra elinde kalan, temettü/borç ödemesi/büyüme için kullanılabilir nakit."
             data={financial_history.map((h) => ({ year: h.fiscal_year, value: h.free_cash_flow }))}
           />
         </CardBody>
@@ -243,9 +264,27 @@ function CompanyDetail({
       <Card>
         <CardHeader title="Valuation" subtitle={`Son ${valuation.history_years_used} yıl tarihsel karşılaştırma`} />
         <CardBody className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <ValuationTile label="P/E" current={valuation.pe} historical={valuation.pe_historical_median} ratio={valuation.pe_vs_history_ratio} />
-          <ValuationTile label="P/B" current={valuation.pb} historical={valuation.pb_historical_median} ratio={valuation.pb_vs_history_ratio} />
-          <ValuationTile label="EV/EBITDA" current={valuation.ev_ebitda} historical={valuation.ev_ebitda_historical_median} ratio={valuation.ev_ebitda_vs_history_ratio} />
+          <ValuationTile
+            label="P/E"
+            current={valuation.pe}
+            historical={valuation.pe_historical_median}
+            ratio={valuation.pe_vs_history_ratio}
+            help="Fiyat/Kazanç oranı — hissenin fiyatı, şirketin hisse başına yıllık kârının kaç katı? Yüksek olması genelde 'pahalı' veya 'yüksek büyüme bekleniyor' anlamına gelir."
+          />
+          <ValuationTile
+            label="P/B"
+            current={valuation.pb}
+            historical={valuation.pb_historical_median}
+            ratio={valuation.pb_vs_history_ratio}
+            help="Fiyat/Defter Değeri oranı — hissenin fiyatı, şirketin muhasebe defterindeki özkaynak değerinin kaç katı?"
+          />
+          <ValuationTile
+            label="EV/EBITDA"
+            current={valuation.ev_ebitda}
+            historical={valuation.ev_ebitda_historical_median}
+            ratio={valuation.ev_ebitda_vs_history_ratio}
+            help="Firma Değeri/FAVÖK oranı — borç ve nakit farkını da hesaba katarak şirketin ne kadara 'satın alınabileceğini', ürettiği faaliyet kârına oranlar. Farklı borç seviyesindeki şirketleri kıyaslamak için P/E'den daha adildir."
+          />
         </CardBody>
       </Card>
 
@@ -302,6 +341,7 @@ function CompanyDetail({
                 label={m.label + (m.is_mock ? " (mock)" : "")}
                 value={m.code.includes("try") ? formatNumber(m.value, 2) : formatPercent(m.value / 100, 1)}
                 hint={formatRelativeTime(m.observation_date)}
+                help={MACRO_HELP[m.code] ?? "Şirketle doğrudan ilgili olmayan, genel ekonomik ortamı gösteren bir makro gösterge."}
               />
             ))}
           </CardBody>
@@ -370,6 +410,14 @@ const CATEGORY_LABEL: Record<string, string> = {
   valuation: "Valuation",
 };
 
+const CATEGORY_HELP: Record<string, string> = {
+  growth: "Şirket ne kadar hızlı büyüyor? Ciro/kâr artış oranlarına bakar.",
+  profitability: "Şirket sattığından ne kadar kâr çıkarabiliyor? Kâr marjları ve özkaynak getirisine (ROE) bakar.",
+  balance_sheet: "Şirketin borç yükü ne kadar sağlıklı? Net Borç/FAVÖK, Borç/Özkaynak gibi kaldıraç göstergelerine bakar.",
+  cash_flow: "Şirket kâğıt üzerindeki kârı gerçek nakde çevirebiliyor mu? Serbest nakit akışı ve nakit dönüşüm oranına bakar.",
+  valuation: "Şirketin borsa fiyatı, kendi tarihsel ortalamasına göre pahalı mı ucuz mu?",
+};
+
 function HeaderSection({
   company,
   market,
@@ -415,6 +463,7 @@ function HeaderSection({
             <div>Güncellendi: {formatRelativeTime(market.as_of)}</div>
             <div className="mt-0.5 flex items-center justify-end gap-1">
               Veri Kalitesi
+              <InfoTooltip text="Bu analizin arkasındaki verinin ne kadar tam, güncel ve kapsamlı olduğunun özeti (0-100). Düşükse bazı veri kaynaklarına o an ulaşılamamış olabilir — analiz sonucu eksik veriyle üretilmiş olabilir demektir." />
               <Badge tone={toneForScore(dataQuality.overall * 100)}>{(dataQuality.overall * 100).toFixed(0)}</Badge>
             </div>
           </div>
@@ -447,25 +496,31 @@ function ValuationTile({
   current,
   historical,
   ratio,
+  help,
 }: {
   label: string;
   current: number | null;
   historical: number | null;
   ratio: number | null;
+  help?: string;
 }) {
   return (
     <div className="rounded-md border border-border bg-surface px-3 py-2.5">
-      <div className="text-[11px] text-muted">{label}</div>
+      <div className="flex items-center gap-1 text-[11px] text-muted">
+        {label}
+        {help && <InfoTooltip text={help} />}
+      </div>
       <div className="mt-1 font-tabular text-lg font-semibold text-foreground">{formatMultiple(current)}</div>
       <div className="mt-1 text-[11px] text-muted">
         Tarihsel medyan: <span className="font-tabular">{formatMultiple(historical)}</span>
       </div>
       {ratio !== null && (
-        <div className="mt-0.5 text-[11px]">
+        <div className="mt-0.5 flex items-center gap-1 text-[11px]">
           <span className={ratio > 1.15 ? "text-[var(--negative)]" : ratio < 0.9 ? "text-[var(--positive)]" : "text-muted"}>
             Tarihsele göre {ratio > 1 ? "+" : ""}
             {((ratio - 1) * 100).toFixed(0)}%
           </span>
+          <InfoTooltip text="Şirketin şu anki çarpanı, kendi son yıllardaki tipik (medyan) çarpanından ne kadar farklı. Pozitif = şu an tarihine göre daha pahalı, negatif = daha ucuz." />
         </div>
       )}
     </div>

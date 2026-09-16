@@ -113,21 +113,25 @@ function PeerComparisonContent({ data }: { data: PeerComparisonResult }) {
             value={formatNumber(data.this_company.overall_score, 0)}
             hint={deltaText ? `Medyan: ${formatNumber(data.median_overall_score, 0)} (${deltaText})` : `Medyan: ${formatNumber(data.median_overall_score, 0)}`}
             tone={deltaTone}
+            help="Bu şirketin 0-100 genel skoru, aynı sektördeki diğer şirketlerin skor medyanıyla kıyaslanıyor. Yeşil = medyanın üstünde, kırmızı = altında."
           />
           <StatTile
             label="P/E"
             value={formatMultiple(data.this_company.pe)}
             hint={`Medyan: ${formatMultiple(data.median_pe)}`}
+            help="Fiyat/Kazanç oranı — bu şirketin çarpanı, sektör medyanına göre yüksek mi düşük mü?"
           />
           <StatTile
             label="P/B"
             value={formatMultiple(data.this_company.pb)}
             hint={`Medyan: ${formatMultiple(data.median_pb)}`}
+            help="Fiyat/Defter Değeri oranı — bu şirketin çarpanı, sektör medyanına göre yüksek mi düşük mü?"
           />
           <StatTile
             label="EV/EBITDA"
             value={formatMultiple(data.this_company.ev_ebitda)}
             hint={`Medyan: ${formatMultiple(data.median_ev_ebitda)}`}
+            help="Firma Değeri/FAVÖK oranı — borç seviyesinden bağımsız bir değerleme çarpanı, sektör medyanına göre yüksek mi düşük mü?"
           />
         </div>
 
