@@ -37,7 +37,7 @@ A free-tier alternative to OpenAI for local development (see
 `docs/DATA_SOURCES.md`), used only when `OPENAI_API_KEY` is unset and
 `GEMINI_API_KEY` is set.
 
-- Model: `Settings.gemini_model` (default `gemini-2.0-flash`).
+- Model: `Settings.gemini_model` (default `gemini-3.6-flash`).
 - Uses `google-genai`'s `response_schema=LLMAnalysisResult` +
   `response_mime_type="application/json"` to request schema-constrained
   JSON, but — unlike `OpenAIProvider`, which trusts the SDK's own

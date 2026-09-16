@@ -41,7 +41,7 @@ Client enforces a minimum 500ms interval between requests
 3. **Gemini** (free-tier alternative to OpenAI, good for local dev):
    create an API key at https://aistudio.google.com/apikey, put it in
    `.env` as `GEMINI_API_KEY`. Optional `GEMINI_MODEL` (default
-   `gemini-2.0-flash`). Only used if `OPENAI_API_KEY` is unset — see
+   `gemini-3.6-flash`). Only used if `OPENAI_API_KEY` is unset — see
    `services/provider_bundle.py` for the selection order
    (OpenAI → Gemini → mock). Implemented by `llm/gemini_provider.py`,
    which conforms to the same `LLMProvider` interface as `OpenAIProvider`

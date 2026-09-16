@@ -48,7 +48,7 @@ def _context() -> StructuredAnalysisContext:
 
 
 def _provider_with_response(text: str | None) -> GeminiProvider:
-    provider = GeminiProvider(api_key="test-key", model="gemini-2.0-flash")
+    provider = GeminiProvider(api_key="test-key", model="gemini-3.6-flash")
     fake_response = type("FakeResponse", (), {"text": text})()
     provider._client.aio.models.generate_content = AsyncMock(return_value=fake_response)
     return provider
@@ -94,7 +94,7 @@ async def test_schema_mismatch_raises_llm_provider_error():
 
 @pytest.mark.asyncio
 async def test_sdk_exception_is_wrapped_as_llm_provider_error():
-    provider = GeminiProvider(api_key="test-key", model="gemini-2.0-flash")
+    provider = GeminiProvider(api_key="test-key", model="gemini-3.6-flash")
     provider._client.aio.models.generate_content = AsyncMock(side_effect=RuntimeError("network down"))
     with pytest.raises(LLMProviderError, match="Gemini request failed"):
         await provider.analyze_company(_context(), "company-analysis-v1")
