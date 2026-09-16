@@ -9,7 +9,7 @@ This document is the operational quick-reference.
 | Financial statements (Income/Balance/Cash Flow) | Yahoo Finance via `yfinance` | No | Free | Coverage/depth varies by company; normalized via `providers/financial/yfinance_mapping.py` |
 | Company disclosures (KAP) | `kap.org.tr` public JSON API | No | Free | Unofficial but publicly served, no auth wall. See endpoints below. |
 | FX (USD/TRY, EUR/TRY) | Yahoo Finance (`USDTRY=X`, `EURTRY=X`) | No | Free | |
-| Policy rate, CPI | TCMB EVDS (`evds2.tcmb.gov.tr`) | **Yes — free registration** | Free | `EVDS_API_KEY` env var. Falls back to a labeled static seed if unset. |
+| Policy rate, CPI | TCMB EVDS3 (`evds3.tcmb.gov.tr`) | **Yes — free registration** | Free | `EVDS_API_KEY` env var. Falls back to a labeled static seed if unset. Live-verified 2026-09-17 — see `providers/macro/evds_client.py` module docstring for the EVDS2→EVDS3 migration details (new base URL, header-based auth, changed monthly date format). |
 | LLM interpretation | OpenAI (Structured Outputs) | **Yes — paid** | Pay-per-token | `OPENAI_API_KEY` env var. Takes priority if set. |
 | LLM interpretation (dev alternative) | Google Gemini | **Yes — free tier** | Free (rate-limited) | `GEMINI_API_KEY` env var. Used only if `OPENAI_API_KEY` is unset. Falls back to `MockLLMProvider` if neither key is set. |
 
@@ -33,7 +33,7 @@ Client enforces a minimum 500ms interval between requests
 
 ## Setting up the credentialed sources
 
-1. **TCMB EVDS**: register at https://evds2.tcmb.gov.tr, generate an API key
+1. **TCMB EVDS**: register at https://evds3.tcmb.gov.tr, generate an API key
    from your profile page, put it in `.env` as `EVDS_API_KEY`.
 2. **OpenAI**: create an API key at https://platform.openai.com, put it in
    `.env` as `OPENAI_API_KEY`. Optional `OPENAI_MODEL` (default

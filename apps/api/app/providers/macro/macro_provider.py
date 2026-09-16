@@ -20,6 +20,21 @@ _MOCK_SEED = {
 }
 _MOCK_SEED_AS_OF = dt.date(2026, 8, 1)
 
+# CPI YoY needs the latest published index value plus a same-month value
+# from 12 months earlier. TCMB's monthly publishing lag (live-verified
+# 2026-09-17: latest available was ~8 months behind "now") means a plain
+# `lookback_days` window anchored to today can miss the comparison point
+# entirely — 800 days (~26 months) comfortably covers a lag plus the
+# 12-month comparison even if TCMB falls further behind.
+_CPI_LOOKBACK_DAYS = 800
+
+# TCMB's own EVDS Web Servis docs explicitly recommend this: "Hazırladığınız
+# sorgunun sürekli güncel veriyi alması için [endDate] alanına çok uzak bir
+# tarih yazınız. Örneğin 01-01-2999" — a query with a far-future endDate
+# always returns through the latest published observation, so freshness
+# doesn't depend on this server's clock matching TCMB's publishing cadence.
+_FAR_FUTURE_END_DATE = dt.date(2999, 1, 1)
+
 
 class CompositeMacroDataProvider(MacroDataProvider):
     """Policy rate & CPI via TCMB EVDS (or labeled mock fallback); FX via
@@ -66,9 +81,10 @@ class CompositeMacroDataProvider(MacroDataProvider):
         self, series_code: str, lookback_days: int, now: dt.datetime
     ) -> list[MacroObservationDTO]:
         assert self._evds is not None
-        end = now.date()
-        start = end - dt.timedelta(days=max(lookback_days, 400))  # extra buffer for YoY calc
+        today = now.date()
+        end = _FAR_FUTURE_END_DATE
         if series_code == "policy_rate":
+            start = today - dt.timedelta(days=max(lookback_days, 400))
             rows = await self._evds.get_series(SERIES_CODES["policy_rate"], start, end)
             date, value = rows[-1]
             return [
@@ -76,7 +92,16 @@ class CompositeMacroDataProvider(MacroDataProvider):
                     series_code=series_code, observation_date=date, value=value, is_mock=False, fetched_at=now
                 )
             ]
-        # cpi_yoy: derive from the CPI index (avoids relying on EVDS `formula=` codes)
+        # cpi_yoy: derive from the CPI index (avoids relying on EVDS `formula=` codes).
+        # TCMB publishes this monthly with a lag (observed live: ~8 months
+        # behind "now" as of 2026-09), so the window can't just be
+        # `lookback_days` back from today — it must reach at least 12
+        # months before whatever the LATEST PUBLISHED point turns out to
+        # be. `_CPI_LOOKBACK_DAYS` gives enough buffer for that lag plus
+        # the 12-month comparison window; if TCMB's lag ever exceeds this,
+        # the len(rows) < 13 check below still catches it honestly rather
+        # than computing a wrong YoY.
+        start = today - dt.timedelta(days=max(lookback_days, _CPI_LOOKBACK_DAYS))
         rows = await self._evds.get_series(SERIES_CODES["cpi_index"], start, end)
         rows.sort(key=lambda r: r[0])
         if len(rows) < 13:

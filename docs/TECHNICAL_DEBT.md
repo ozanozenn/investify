@@ -17,14 +17,40 @@ block the Phase 1 Definition of Done; all are candidates for Phase 2+.
 
 ## Macro data
 
-- **TCMB EVDS series codes are unverified against a live key**
-  (`providers/macro/evds_client.py`): `TP.APIFON4` (funding cost, used as
-  the policy-rate proxy) and `TP.FG.J0` (CPI index, YoY computed
-  client-side) were chosen from public documentation/community usage, not
-  confirmed against a real API response, because this environment has no
-  `EVDS_API_KEY`. **Fix**: once a key is available, run one real request
-  per series and confirm the field name / value shape matches what
-  `evds_client.py` expects; adjust if not.
+- **TCMB EVDS series codes are now live-verified against a real key —
+  FIXED, and a real platform migration was found and fixed along the
+  way.** This item started as "unverified against a live key" in Phase 1;
+  a real `EVDS_API_KEY` was added 2026-09-17, and both `TP.APIFON4`
+  (policy-rate proxy) and `TP.FG.J0` (CPI index, YoY computed
+  client-side) now resolve and parse correctly. Getting there surfaced
+  that TCMB has migrated EVDS2 to a new platform ("EVDS3") since Phase 1
+  was written, breaking the client in three independent ways — see
+  `providers/macro/evds_client.py`'s module docstring for the full
+  detail, summarized here:
+  1. The endpoint moved (`evds2.tcmb.gov.tr/service/evds` →
+     `evds3.tcmb.gov.tr/igmevdsms-dis/`); the old path now serves EVDS3's
+     web app HTML rather than a redirect to the new API path.
+  2. The API key moved from a `key=` query parameter to an HTTP header.
+  3. The server expects `key=value&...` appended directly to the base URL
+     with no leading `?` (a literal path suffix, not a standard query
+     string) — confirmed against a community client
+     ([fatihmete/evds](https://github.com/fatihmete/evds)) that had
+     already adapted to this.
+  4. Monthly series dates changed format (`"MM-YYYY"` → `"YYYY-M"`,
+     not zero-padded).
+  Separately (not an EVDS3 change, just a real-world data characteristic):
+  **TCMB's CPI index has an observed ~8-month publishing lag** (as of
+  2026-09-17, the latest available point was January 2026). The YoY
+  computation's fetch window was previously anchored tightly to "today"
+  and missed the 12-months-back comparison point once actual data was
+  this stale; widened to `_CPI_LOOKBACK_DAYS = 800` days so the window
+  reaches far enough back from whatever the *latest published* point
+  turns out to be, not from today. If TCMB's lag ever exceeds this, the
+  existing `len(rows) < 13` guard still fails safely (falls back to the
+  labeled mock) rather than computing a wrong number.
+  Live-verified end-to-end via a real `/refresh` call: `policy_rate`,
+  `cpi_yoy`, `usdtry`, `eurtry` all returned `is_mock: false` with
+  current, correct values.
 
 ## Search
 
