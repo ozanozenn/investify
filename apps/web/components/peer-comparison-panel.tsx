@@ -30,10 +30,10 @@ export function PeerComparisonPanel({ ticker }: { ticker: string }) {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader title="Peer Comparison" subtitle="Benzer şirketlerle karşılaştırma" />
+        <CardHeader title="Emsal Karşılaştırması" subtitle="Benzer şirketlerle karşılaştırma" />
         <CardBody className="flex items-center gap-2 text-xs text-muted">
           <Loader2 className="animate-spin" size={14} />
-          Peer karşılaştırması yükleniyor...
+          Emsal karşılaştırması yükleniyor...
         </CardBody>
       </Card>
     );
@@ -48,10 +48,10 @@ export function PeerComparisonPanel({ ticker }: { ticker: string }) {
     }
     return (
       <Card>
-        <CardHeader title="Peer Comparison" subtitle="Benzer şirketlerle karşılaştırma" />
+        <CardHeader title="Emsal Karşılaştırması" subtitle="Benzer şirketlerle karşılaştırma" />
         <CardBody className="flex items-center gap-2 text-xs text-muted">
           <AlertTriangle size={14} className="text-[var(--warning)]" />
-          Peer karşılaştırması yüklenemedi
+          Emsal karşılaştırması yüklenemedi
         </CardBody>
       </Card>
     );
@@ -70,7 +70,7 @@ function PeerComparisonContent({ data }: { data: PeerComparisonResult }) {
     const otherLabel = industry ?? sector;
     return (
       <Card>
-        <CardHeader title="Peer Comparison" subtitle="Benzer şirketlerle karşılaştırma" />
+        <CardHeader title="Emsal Karşılaştırması" subtitle="Benzer şirketlerle karşılaştırma" />
         <CardBody>
           <p className="text-sm text-foreground">
             {groupLabel} için henüz karşılaştırılabilecek başka bir şirket analiz edilmemiş.
@@ -105,30 +105,30 @@ function PeerComparisonContent({ data }: { data: PeerComparisonResult }) {
 
   return (
     <Card>
-      <CardHeader title="Peer Comparison" subtitle={basisSubtitle} />
+      <CardHeader title="Emsal Karşılaştırması" subtitle={basisSubtitle} />
       <CardBody className="space-y-4">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatTile
-            label="Overall Score"
+            label="Genel Skor"
             value={formatNumber(data.this_company.overall_score, 0)}
             hint={deltaText ? `Medyan: ${formatNumber(data.median_overall_score, 0)} (${deltaText})` : `Medyan: ${formatNumber(data.median_overall_score, 0)}`}
             tone={deltaTone}
             help="Bu şirketin 0-100 genel skoru, aynı sektördeki diğer şirketlerin skor medyanıyla kıyaslanıyor. Yeşil = medyanın üstünde, kırmızı = altında."
           />
           <StatTile
-            label="P/E"
+            label="F/K"
             value={formatMultiple(data.this_company.pe)}
             hint={`Medyan: ${formatMultiple(data.median_pe)}`}
             help="Fiyat/Kazanç oranı — bu şirketin çarpanı, sektör medyanına göre yüksek mi düşük mü?"
           />
           <StatTile
-            label="P/B"
+            label="PD/DD"
             value={formatMultiple(data.this_company.pb)}
             hint={`Medyan: ${formatMultiple(data.median_pb)}`}
             help="Fiyat/Defter Değeri oranı — bu şirketin çarpanı, sektör medyanına göre yüksek mi düşük mü?"
           />
           <StatTile
-            label="EV/EBITDA"
+            label="FD/FAVÖK"
             value={formatMultiple(data.this_company.ev_ebitda)}
             hint={`Medyan: ${formatMultiple(data.median_ev_ebitda)}`}
             help="Firma Değeri/FAVÖK oranı — borç seviyesinden bağımsız bir değerleme çarpanı, sektör medyanına göre yüksek mi düşük mü?"
@@ -140,17 +140,17 @@ function PeerComparisonContent({ data }: { data: PeerComparisonResult }) {
             <thead>
               <tr className="text-left text-muted">
                 <th className="pb-2 font-medium">Şirket</th>
-                <th className="pb-2 font-medium">Score</th>
-                <th className="pb-2 font-medium">P/E</th>
-                <th className="pb-2 font-medium">P/B</th>
-                <th className="pb-2 font-medium">EV/EBITDA</th>
+                <th className="pb-2 font-medium">Skor</th>
+                <th className="pb-2 font-medium">F/K</th>
+                <th className="pb-2 font-medium">PD/DD</th>
+                <th className="pb-2 font-medium">FD/FAVÖK</th>
               </tr>
             </thead>
             <tbody>
               {data.peers.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-2 text-muted">
-                    Listelenecek peer bulunamadı.
+                    Listelenecek emsal bulunamadı.
                   </td>
                 </tr>
               )}

@@ -52,14 +52,14 @@ async def compare_snapshots(
     snapshots = result.scalars().all()
 
     if not snapshots:
-        raise HTTPException(status_code=404, detail=f"No analysis snapshots found for {ticker}.")
+        raise HTTPException(status_code=404, detail=f"{ticker} için hiç analiz bulunamadı.")
 
     if len(snapshots) < 2:
         raise HTTPException(
             status_code=409,
             detail=(
-                f"{ticker} has only {len(snapshots)} analysis snapshot(s); "
-                "run at least two refreshes to compare."
+                f"{ticker} için şu anda yalnızca {len(snapshots)} analiz var; "
+                "karşılaştırma yapabilmek için en az iki refresh çalıştırın."
             ),
         )
 
@@ -70,7 +70,7 @@ async def compare_snapshots(
     else:
         to_snapshot = by_id.get(to_id)
         if to_snapshot is None:
-            raise HTTPException(status_code=404, detail=f"Snapshot {to_id} not found for {ticker}.")
+            raise HTTPException(status_code=404, detail=f"{ticker} için {to_id} numaralı anlık görüntü bulunamadı.")
 
     if from_id is None:
         # The snapshot immediately preceding `to_snapshot` in this ticker's
@@ -81,6 +81,6 @@ async def compare_snapshots(
     else:
         from_snapshot = by_id.get(from_id)
         if from_snapshot is None:
-            raise HTTPException(status_code=404, detail=f"Snapshot {from_id} not found for {ticker}.")
+            raise HTTPException(status_code=404, detail=f"{ticker} için {from_id} numaralı anlık görüntü bulunamadı.")
 
     return compute_snapshot_diff(previous=from_snapshot, current=to_snapshot)

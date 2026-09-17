@@ -3,7 +3,7 @@ import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Investify — BIST Investment Intelligence",
+  title: "Investify — BIST Yatırım Zekâsı",
   description: "Borsa İstanbul şirketleri için yatırım araştırma platformu",
 };
 

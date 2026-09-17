@@ -448,7 +448,7 @@ function SensitivityMatrix({
         <table className="w-full min-w-[480px] text-xs">
           <thead>
             <tr>
-              <th className="pb-2 pr-2 text-left font-medium text-muted">WACC \ Terminal</th>
+              <th className="pb-2 pr-2 text-left font-medium text-muted">WACC \ Terminal Büyüme</th>
               {tgCols.map((tg) => (
                 <th key={tg} className="pb-2 px-2 text-right font-medium text-muted">
                   {formatPercent(tg, 1)}

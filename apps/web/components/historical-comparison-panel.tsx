@@ -66,7 +66,7 @@ function extractDetail(message: string): string | null {
 function NotEnoughHistory({ count }: { count: number }) {
   return (
     <Card>
-      <CardHeader title="Since Previous Analysis" subtitle="Önceki analize göre değişim" />
+      <CardHeader title="Önceki Analize Göre" subtitle="Önceki analize göre değişim" />
       <CardBody>
         <p className="text-sm text-muted">
           Karşılaştırma için en az iki analiz gerekiyor. Şu an {count} analiz var — tekrar refresh
@@ -80,7 +80,7 @@ function NotEnoughHistory({ count }: { count: number }) {
 function InlineError() {
   return (
     <Card>
-      <CardHeader title="Since Previous Analysis" subtitle="Önceki analize göre değişim" />
+      <CardHeader title="Önceki Analize Göre" subtitle="Önceki analize göre değişim" />
       <CardBody>
         <p className="text-sm text-muted">Karşılaştırma yüklenemedi.</p>
       </CardBody>
@@ -184,7 +184,7 @@ function ComparisonResult({ data }: { data: SnapshotDiffResult }) {
       <div className="flex flex-wrap items-center gap-4">
         <div>
           <div className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted">
-            Thesis Strength
+            Tez Gücü
             <InfoTooltip text="Genel skordaki değişime bakarak sistemin çıkardığı otomatik yargı: yatırım fikri iki analiz arasında güçlendi mi, zayıfladı mı, yoksa önemli bir şey değişmedi mi?" />
           </div>
           <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ export function HistoricalComparisonPanel({ ticker }: { ticker: string }) {
   if (historyQuery.isLoading) {
     return (
       <Card>
-        <CardHeader title="Since Previous Analysis" subtitle="Önceki analize göre değişim" />
+        <CardHeader title="Önceki Analize Göre" subtitle="Önceki analize göre değişim" />
         <CardBody>
           <p className="text-sm text-muted">Yükleniyor...</p>
         </CardBody>
@@ -254,7 +254,7 @@ export function HistoricalComparisonPanel({ ticker }: { ticker: string }) {
   return (
     <Card>
       <CardHeader
-        title="Since Previous Analysis"
+        title="Önceki Analize Göre"
         subtitle="Önceki analize göre değişim ve tez gücü"
         action={
           <div className="flex flex-wrap items-end gap-3">

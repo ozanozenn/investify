@@ -28,7 +28,7 @@ def test_score_category_excludes_missing_metric_and_rescales():
     assert result.score == 100.0
     assert result.components[1].value is None
     assert result.components[1].points == 0.0
-    assert "excluded" in result.components[1].reason
+    assert "hariç tutuldu" in result.components[1].reason
 
 
 def test_score_category_all_missing_yields_zero_not_error():

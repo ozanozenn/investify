@@ -9,6 +9,22 @@ from app.core.config import get_analysis_config
 from app.schemas.context import DataQuality
 from app.schemas.financial import FinancialMetrics
 
+# Turkish labels for refresh-pipeline stage keys (see
+# services/refresh_pipeline.py stage_results: "market", "financials",
+# "kap", "macro:<code>"). Falls back to the raw key if unmapped so a
+# stage never disappears from the warning, just stays untranslated.
+_STAGE_LABELS = {
+    "market": "Piyasa",
+    "financials": "Finansal tablo",
+    "kap": "KAP",
+}
+
+
+def _stage_label(stage: str) -> str:
+    if stage.startswith("macro:"):
+        return f"Makro ({stage.split(':', 1)[1]})"
+    return _STAGE_LABELS.get(stage, stage)
+
 
 def compute_data_quality(
     metrics: FinancialMetrics,
@@ -22,14 +38,14 @@ def compute_data_quality(
     missing = len(metrics.missing_fields)
     completeness = max(0.0, 1 - missing / total_core_fields)
     if missing:
-        warnings.append(f"{missing} core financial field(s) missing for latest period")
+        warnings.append(f"Son dönem için {missing} temel finansal alan eksik")
 
     failed_stages = [name for name, status in stage_results.items() if status == "FAILED"]
     freshness = max(0.0, 1 - 0.2 * len(failed_stages))
     for stage in failed_stages:
-        warnings.append(f"{stage} data unavailable")
+        warnings.append(f"{_stage_label(stage)} verisi alınamadı")
     if not market_available:
-        warnings.append("market data unavailable")
+        warnings.append("Piyasa verisi alınamadı")
         freshness = min(freshness, 0.5)
 
     tracked_metrics = [

@@ -45,7 +45,7 @@ async def test_partial_failure_does_not_crash_pipeline(client, fake_providers):
 
     assert body["stage_results"]["financials"] == "FAILED"
     assert body["stage_results"]["market"] == "SUCCESS"
-    assert "financials data unavailable" in body["data_quality"]["warnings"]
+    assert "Finansal tablo verisi alınamadı" in body["data_quality"]["warnings"]
     # No financial data at all -> scoring degrades but does not error.
     assert body["metrics"]["as_of_period"] == "N/A"
 

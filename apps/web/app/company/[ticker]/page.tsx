@@ -157,7 +157,7 @@ function CompanyDetail({
       )}
 
       <Card>
-        <CardHeader title="AI Executive Summary" subtitle={analysis._meta.llm_is_mocked ? "Mock LLM — OPENAI_API_KEY veya GEMINI_API_KEY tanımlı değil" : `Model: ${analysis._meta.llm_model}`} />
+        <CardHeader title="Yapay Zekâ Özeti" subtitle={analysis._meta.llm_is_mocked ? "Mock LLM — OPENAI_API_KEY veya GEMINI_API_KEY tanımlı değil" : `Model: ${analysis._meta.llm_model}`} />
         <CardBody>
           <p className="text-sm leading-relaxed text-foreground">{analysis.executive_summary}</p>
         </CardBody>
@@ -165,7 +165,7 @@ function CompanyDetail({
 
       {whatMattersNow.length > 0 && (
         <Card>
-          <CardHeader title="WHAT MATTERS NOW" />
+          <CardHeader title="ŞU AN ÖNEMLİ OLANLAR" />
           <CardBody>
             <ul className="grid gap-2 sm:grid-cols-2">
               {whatMattersNow.map((item, i) => (
@@ -179,7 +179,7 @@ function CompanyDetail({
       )}
 
       <Card>
-        <CardHeader title="Investment Outlook" />
+        <CardHeader title="Yatırım Görünümü" />
         <CardBody className="grid gap-3 sm:grid-cols-3">
           <OutlookCard title="Kısa Vade (0-6 ay)" horizon={analysis.short_term} />
           <OutlookCard title="Orta Vade (6-24 ay)" horizon={analysis.medium_term} />
@@ -188,11 +188,11 @@ function CompanyDetail({
       </Card>
 
       <Card>
-        <CardHeader title="Scorecard" subtitle={`Deterministic scoring engine ${versions.scoring_engine}`} />
+        <CardHeader title="Skor Kartı" subtitle={`Deterministik skorlama motoru ${versions.scoring_engine}`} />
         <CardBody className="grid gap-4 sm:grid-cols-[auto_1fr]">
           <BigScore
             score={scores.overall}
-            label="Overall"
+            label="Genel"
             help="0-100 arası tek bir özet puan. Aşağıdaki 5 kategorinin ağırlıklı ortalamasıdır — şirketin sayılarla ne kadar sağlıklı göründüğünü tek bakışta özetler. Bir alım/satım tavsiyesi değildir."
           />
           <div className="grid gap-3 sm:grid-cols-2">
@@ -209,31 +209,31 @@ function CompanyDetail({
       </Card>
 
       <Card>
-        <CardHeader title="Financial Performance" subtitle="Son yıllık dönemler" />
+        <CardHeader title="Finansal Performans" subtitle="Son yıllık dönemler" />
         <CardBody className="grid gap-6 sm:grid-cols-2">
           <MiniBarChart
-            label="Revenue"
+            label="Hasılat"
             colorVar="--accent"
             currency={market.currency}
             help="Hasılat (Ciro) — şirketin dönem içinde sattığı ürün/hizmetlerden elde ettiği toplam gelir, hiçbir masraf düşülmeden."
             data={financial_history.map((h) => ({ year: h.fiscal_year, value: h.revenue }))}
           />
           <MiniBarChart
-            label="EBITDA"
+            label="FAVÖK"
             colorVar="--positive"
             currency={market.currency}
             help="FAVÖK (Faiz, Vergi, Amortisman Öncesi Kâr) — şirketin ana faaliyetlerinden ne kadar nakit üretebildiğini gösteren, borç/vergi yapısından bağımsız bir kârlılık ölçüsü."
             data={financial_history.map((h) => ({ year: h.fiscal_year, value: h.ebitda }))}
           />
           <MiniBarChart
-            label="Net Income"
+            label="Net Kâr"
             colorVar="--warning"
             currency={market.currency}
             help="Net Kâr — tüm giderler, faizler ve vergiler düşüldükten sonra şirkete kalan nihai kâr."
             data={financial_history.map((h) => ({ year: h.fiscal_year, value: h.net_income }))}
           />
           <MiniBarChart
-            label="Free Cash Flow"
+            label="Serbest Nakit Akışı"
             colorVar="--accent"
             currency={market.currency}
             help="Serbest Nakit Akışı — şirketin işletme faaliyetlerinden ürettiği nakitten yatırım harcamaları (CAPEX) düşüldükten sonra elinde kalan, temettü/borç ödemesi/büyüme için kullanılabilir nakit."
@@ -243,47 +243,47 @@ function CompanyDetail({
       </Card>
 
       <Card>
-        <CardHeader title="Financial Metrics" subtitle={`${metrics.as_of_period} dönemi itibarıyla`} />
+        <CardHeader title="Finansal Göstergeler" subtitle={`${metrics.as_of_period} dönemi itibarıyla`} />
         <CardBody className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatTile label="Revenue Growth YoY" value={formatPercent(metrics.revenue_growth_yoy)} help="Son yıllık dönemin bir önceki yıla göre ciro büyümesi." />
-          <StatTile label="Revenue CAGR 3Y" value={formatPercent(metrics.revenue_cagr_3y)} help="Son 3 yıllık bileşik yıllık büyüme oranı." />
-          <StatTile label="EBITDA Margin" value={formatPercent(metrics.ebitda_margin)} help="FAVÖK / Hasılat." />
-          <StatTile label="Net Margin" value={formatPercent(metrics.net_margin)} help="Net Kâr / Hasılat." />
-          <StatTile label="ROE" value={formatPercent(metrics.roe)} help="Net Kâr / Ortalama Özkaynak." />
+          <StatTile label="Yıllık Gelir Büyümesi" value={formatPercent(metrics.revenue_growth_yoy)} help="Son yıllık dönemin bir önceki yıla göre ciro büyümesi." />
+          <StatTile label="3 Yıllık Ort. Büyüme (BYBO)" value={formatPercent(metrics.revenue_cagr_3y)} help="Son 3 yıllık bileşik yıllık büyüme oranı." />
+          <StatTile label="FAVÖK Marjı" value={formatPercent(metrics.ebitda_margin)} help="FAVÖK / Hasılat." />
+          <StatTile label="Net Kâr Marjı" value={formatPercent(metrics.net_margin)} help="Net Kâr / Hasılat." />
+          <StatTile label="Özkaynak Kârlılığı (ROE)" value={formatPercent(metrics.roe)} help="Net Kâr / Ortalama Özkaynak." />
           <StatTile
-            label="Net Debt / EBITDA"
+            label="Net Borç / FAVÖK"
             value={formatMultiple(metrics.net_debt_to_ebitda)}
             tone={metrics.net_debt_to_ebitda !== null && metrics.net_debt_to_ebitda > 3 ? "negative" : "neutral"}
             help="Net Borç / FAVÖK — kaldıraç göstergesi. Düşük daha sağlıklıdır."
           />
-          <StatTile label="Debt / Equity" value={formatMultiple(metrics.debt_to_equity)} help="Toplam Borç / Özkaynak." />
-          <StatTile label="FCF Margin" value={formatPercent(metrics.fcf_margin)} help="Serbest Nakit Akışı / Hasılat." />
+          <StatTile label="Borç / Özkaynak" value={formatMultiple(metrics.debt_to_equity)} help="Toplam Borç / Özkaynak." />
+          <StatTile label="Serbest Nakit Akışı Marjı" value={formatPercent(metrics.fcf_margin)} help="Serbest Nakit Akışı / Hasılat." />
         </CardBody>
       </Card>
 
       <Card>
-        <CardHeader title="Valuation" subtitle={`Son ${valuation.history_years_used} yıl tarihsel karşılaştırma`} />
+        <CardHeader title="Değerleme" subtitle={`Son ${valuation.history_years_used} yıl tarihsel karşılaştırma`} />
         <CardBody className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <ValuationTile
-            label="P/E"
+            label="F/K"
             current={valuation.pe}
             historical={valuation.pe_historical_median}
             ratio={valuation.pe_vs_history_ratio}
             help="Fiyat/Kazanç oranı — hissenin fiyatı, şirketin hisse başına yıllık kârının kaç katı? Yüksek olması genelde 'pahalı' veya 'yüksek büyüme bekleniyor' anlamına gelir."
           />
           <ValuationTile
-            label="P/B"
+            label="PD/DD"
             current={valuation.pb}
             historical={valuation.pb_historical_median}
             ratio={valuation.pb_vs_history_ratio}
-            help="Fiyat/Defter Değeri oranı — hissenin fiyatı, şirketin muhasebe defterindeki özkaynak değerinin kaç katı?"
+            help="Piyasa Değeri/Defter Değeri oranı — hissenin fiyatı, şirketin muhasebe defterindeki özkaynak değerinin kaç katı?"
           />
           <ValuationTile
-            label="EV/EBITDA"
+            label="FD/FAVÖK"
             current={valuation.ev_ebitda}
             historical={valuation.ev_ebitda_historical_median}
             ratio={valuation.ev_ebitda_vs_history_ratio}
-            help="Firma Değeri/FAVÖK oranı — borç ve nakit farkını da hesaba katarak şirketin ne kadara 'satın alınabileceğini', ürettiği faaliyet kârına oranlar. Farklı borç seviyesindeki şirketleri kıyaslamak için P/E'den daha adildir."
+            help="Firma Değeri/FAVÖK oranı — borç ve nakit farkını da hesaba katarak şirketin ne kadara 'satın alınabileceğini', ürettiği faaliyet kârına oranlar. Farklı borç seviyesindeki şirketleri kıyaslamak için F/K'dan daha adildir."
           />
         </CardBody>
       </Card>
@@ -296,19 +296,19 @@ function CompanyDetail({
       </div>
 
       <Card>
-        <CardHeader title="Investment Thesis" />
+        <CardHeader title="Yatırım Tezi" />
         <CardBody className="grid gap-4 sm:grid-cols-2">
-          <ThesisList title="Bull Case" items={analysis.bull_case} tone="positive" />
-          <ThesisList title="Bear Case" items={analysis.bear_case} tone="negative" />
-          <ThesisList title="Catalysts" items={analysis.key_catalysts} tone="accent" />
-          <ThesisList title="Risks" items={analysis.key_risks} tone="warning" />
-          <ThesisList title="Thesis Breakers" items={analysis.thesis_breakers} tone="negative" full />
+          <ThesisList title="Olumlu Senaryo" items={analysis.bull_case} tone="positive" />
+          <ThesisList title="Olumsuz Senaryo" items={analysis.bear_case} tone="negative" />
+          <ThesisList title="Katalizörler" items={analysis.key_catalysts} tone="accent" />
+          <ThesisList title="Riskler" items={analysis.key_risks} tone="warning" />
+          <ThesisList title="Tezi Geçersiz Kılacak Faktörler" items={analysis.thesis_breakers} tone="negative" full />
         </CardBody>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Latest KAP Disclosures" subtitle="kap.org.tr" />
+          <CardHeader title="Son KAP Açıklamaları" subtitle="kap.org.tr" />
           <CardBody className="space-y-2">
             {disclosures.length === 0 && <p className="text-xs text-muted">KAP verisi bulunamadı.</p>}
             {disclosures.map((d, i) => (
@@ -333,7 +333,7 @@ function CompanyDetail({
         </Card>
 
         <Card>
-          <CardHeader title="Macro Context" subtitle="TCMB EVDS / piyasa" />
+          <CardHeader title="Makroekonomik Görünüm" subtitle="TCMB EVDS / piyasa" />
           <CardBody className="grid grid-cols-2 gap-3">
             {macro.map((m) => (
               <StatTile
@@ -350,7 +350,7 @@ function CompanyDetail({
 
       {analysis.what_to_watch.length > 0 && (
         <Card>
-          <CardHeader title="WHAT TO WATCH" />
+          <CardHeader title="TAKİP EDİLECEKLER" />
           <CardBody>
             <ul className="space-y-1.5">
               {analysis.what_to_watch.map((item, i) => (
@@ -364,7 +364,7 @@ function CompanyDetail({
       )}
 
       <Card>
-        <CardHeader title="Sources" subtitle="Bu bilgi nereden geldi?" />
+        <CardHeader title="Kaynaklar" subtitle="Bu bilgi nereden geldi?" />
         <CardBody className="overflow-x-auto">
           <table className="w-full min-w-[480px] text-xs">
             <thead>
@@ -403,11 +403,11 @@ function CompanyDetail({
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
-  growth: "Growth",
-  profitability: "Profitability",
-  balance_sheet: "Balance Sheet",
-  cash_flow: "Cash Flow",
-  valuation: "Valuation",
+  growth: "Büyüme",
+  profitability: "Kârlılık",
+  balance_sheet: "Bilanço",
+  cash_flow: "Nakit Akışı",
+  valuation: "Değerleme",
 };
 
 const CATEGORY_HELP: Record<string, string> = {
@@ -474,7 +474,7 @@ function HeaderSection({
             className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-xs font-medium text-foreground hover:bg-surface-hover disabled:opacity-50"
           >
             <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
-            {refreshing ? "Yenileniyor..." : "Refresh"}
+            {refreshing ? "Yenileniyor..." : "Yenile"}
           </button>
         </div>
       </CardBody>

@@ -85,7 +85,7 @@ async def get_company_analysis(
     try:
         refresh_result = await run_refresh(db, ticker, providers, settings)
     except LLMProviderError as exc:
-        raise HTTPException(status_code=502, detail=f"LLM analysis unavailable: {exc}") from exc
+        raise HTTPException(status_code=502, detail=f"Yapay zekâ analizi şu anda kullanılamıyor: {exc}") from exc
 
     result = await db.execute(
         select(AnalysisSnapshot).where(AnalysisSnapshot.ticker == ticker).order_by(AnalysisSnapshot.created_at.desc()).limit(1)
@@ -125,7 +125,7 @@ async def refresh_company(
     try:
         refresh_result = await run_refresh(db, ticker, providers, settings)
     except LLMProviderError as exc:
-        raise HTTPException(status_code=502, detail=f"LLM analysis unavailable: {exc}") from exc
+        raise HTTPException(status_code=502, detail=f"Yapay zekâ analizi şu anda kullanılamıyor: {exc}") from exc
 
     result = await db.execute(
         select(AnalysisSnapshot).where(AnalysisSnapshot.ticker == ticker).order_by(AnalysisSnapshot.created_at.desc()).limit(1)

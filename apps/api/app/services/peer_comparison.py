@@ -88,11 +88,11 @@ async def compute_peer_comparison(session: AsyncSession, ticker: str) -> PeerCom
     result = await session.execute(select(Ticker).where(Ticker.symbol == symbol))
     ticker_row = result.scalars().first()
     if ticker_row is None:
-        raise CompanyNotFoundError(f"No company found for ticker '{symbol}'")
+        raise CompanyNotFoundError(f"'{symbol}' koduna karşılık gelen bir şirket bulunamadı")
 
     subject = await session.get(Company, ticker_row.company_id)
     if subject is None:
-        raise CompanyNotFoundError(f"No company found for ticker '{symbol}'")
+        raise CompanyNotFoundError(f"'{symbol}' koduna karşılık gelen bir şirket bulunamadı")
 
     subject_snapshot_result = await session.execute(
         select(AnalysisSnapshot)
@@ -102,7 +102,7 @@ async def compute_peer_comparison(session: AsyncSession, ticker: str) -> PeerCom
     )
     subject_snapshot = subject_snapshot_result.scalar_one_or_none()
     if subject_snapshot is None:
-        raise NoAnalysisSnapshotError(f"'{symbol}' has no analysis snapshot yet; run a refresh first")
+        raise NoAnalysisSnapshotError(f"'{symbol}' için henüz bir analiz yok; önce bir refresh çalıştırın")
 
     this_company = _metric_from_snapshot(symbol, subject.name, subject_snapshot)
 

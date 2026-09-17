@@ -35,11 +35,11 @@ async def require_user(
         return settings.app_user_email
 
     if credentials is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Bearer token eksik")
     try:
         payload = jwt.decode(
             credentials.credentials, settings.jwt_secret, algorithms=[settings.jwt_algorithm]
         )
     except JWTError as exc:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Geçersiz token") from exc
     return payload.get("sub", "")

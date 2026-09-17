@@ -47,7 +47,7 @@ def score_category(category_key: str, category_cfg: dict, metrics: dict[str, flo
                     value=None,
                     points=0.0,
                     max_points=max_points,
-                    reason="excluded: required data unavailable",
+                    reason="hariç tutuldu: gerekli veri mevcut değil",
                 )
             )
             continue
@@ -62,7 +62,7 @@ def score_category(category_key: str, category_cfg: dict, metrics: dict[str, flo
                 value=value,
                 points=round(points, 2),
                 max_points=max_points,
-                reason=f"{comp_cfg['label']}={_fmt(value)} -> {round(points, 1)}/{max_points} pts",
+                reason=f"{comp_cfg['label']}={_fmt(value)} -> {round(points, 1)}/{max_points} puan",
             )
         )
 
@@ -95,7 +95,7 @@ def compute_score(metrics: dict[str, float | None], engine_version: str = "v1") 
 
 
 def unsupported_score_result(engine_version: str, reason: str) -> ScoreResult:
-    empty = CategoryScore(label="Unsupported", score=0.0, components=[])
+    empty = CategoryScore(label="Desteklenmiyor", score=0.0, components=[])
     return ScoreResult(
         growth=empty,
         profitability=empty,

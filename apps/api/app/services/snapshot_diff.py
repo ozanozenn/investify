@@ -28,12 +28,12 @@ CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
 # (metric key used in thesis.yaml / MetricDelta.metric, context_json section,
 # key within that section, human label).
 _TRACKED_METRICS: list[tuple[str, str, str, str]] = [
-    ("revenue_growth_yoy", "metrics", "revenue_growth_yoy", "Revenue growth (YoY)"),
-    ("ebitda_margin", "metrics", "ebitda_margin", "EBITDA margin"),
-    ("net_debt_to_ebitda", "metrics", "net_debt_to_ebitda", "Net Debt / EBITDA"),
-    ("roe", "metrics", "roe", "Return on Equity (ROE)"),
-    ("pe", "valuation", "pe", "P/E"),
-    ("overall_score", "scores", "overall", "Overall score"),
+    ("revenue_growth_yoy", "metrics", "revenue_growth_yoy", "Gelir Büyümesi (Yıllık)"),
+    ("ebitda_margin", "metrics", "ebitda_margin", "FAVÖK Marjı"),
+    ("net_debt_to_ebitda", "metrics", "net_debt_to_ebitda", "Net Borç / FAVÖK"),
+    ("roe", "metrics", "roe", "Özkaynak Kârlılığı (ROE)"),
+    ("pe", "valuation", "pe", "F/K"),
+    ("overall_score", "scores", "overall", "Genel Skor"),
 ]
 
 
@@ -107,14 +107,14 @@ def _classify_thesis_strength(
     weakened_at = strength_cfg.get("weakened_at_or_below", -3.0)
 
     if overall_score_delta is None:
-        return "UNCHANGED", "Overall score unavailable on one of the two snapshots; unable to assess change."
+        return "UNCHANGED", "İki anlık görüntüden birinde genel skor mevcut değil; değişim değerlendirilemiyor."
     if overall_score_delta >= strengthened_at:
-        return "STRENGTHENED", f"Overall score improved by {overall_score_delta:.1f} points"
+        return "STRENGTHENED", f"Genel skor {overall_score_delta:.1f} puan arttı"
     if overall_score_delta <= weakened_at:
-        return "WEAKENED", f"Overall score declined by {abs(overall_score_delta):.1f} points"
+        return "WEAKENED", f"Genel skor {abs(overall_score_delta):.1f} puan geriledi"
     return (
         "UNCHANGED",
-        f"Overall score changed by {overall_score_delta:+.1f} points, within the no-change threshold",
+        f"Genel skor {overall_score_delta:+.1f} puan değişti — önemli değişim eşiğinin altında",
     )
 
 

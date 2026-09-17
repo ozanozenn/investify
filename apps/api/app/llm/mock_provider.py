@@ -4,7 +4,7 @@ from app.llm.base import LLMProvider
 from app.schemas.context import StructuredAnalysisContext
 from app.schemas.llm_analysis import HorizonOutlook, LLMAnalysisResult
 
-_MOCK_PREFIX = "[MOCK LLM — no OPENAI_API_KEY or GEMINI_API_KEY set] "
+_MOCK_PREFIX = "[MOCK LLM — OPENAI_API_KEY veya GEMINI_API_KEY tanımlı değil] "
 
 
 def _outlook_from_score(score: float) -> str:
@@ -52,13 +52,13 @@ class MockLLMProvider(LLMProvider):
         overall = context.scores.overall
         outlook = _outlook_from_score(overall)
         summary = (
-            f"{_MOCK_PREFIX}{context.company.name} ({context.ticker}) — overall deterministic "
-            f"score {overall}/100. Growth {context.scores.growth.score}, "
-            f"Profitability {context.scores.profitability.score}, "
-            f"Balance Sheet {context.scores.balance_sheet.score}, "
-            f"Cash Flow {context.scores.cash_flow.score}, "
-            f"Valuation {context.scores.valuation.score}. "
-            "This summary is a deterministic placeholder, not an LLM interpretation."
+            f"{_MOCK_PREFIX}{context.company.name} ({context.ticker}) — genel deterministik "
+            f"skor {overall}/100. Büyüme {context.scores.growth.score}, "
+            f"Kârlılık {context.scores.profitability.score}, "
+            f"Bilanço {context.scores.balance_sheet.score}, "
+            f"Nakit Akışı {context.scores.cash_flow.score}, "
+            f"Değerleme {context.scores.valuation.score}. "
+            "Bu özet deterministik bir yer tutucudur, gerçek bir yapay zekâ yorumu değildir."
         )
 
         def horizon(conf: float) -> HorizonOutlook:
@@ -77,8 +77,8 @@ class MockLLMProvider(LLMProvider):
             long_term=horizon(context.data_quality.overall * 0.4),
             bull_case=[c.reason for c in context.scores.growth.components if c.points >= c.max_points * 0.7],
             bear_case=[c.reason for c in context.scores.balance_sheet.components if c.points < c.max_points * 0.3],
-            key_risks=[_MOCK_PREFIX + "See balance sheet and cash flow score components for detail."],
+            key_risks=[_MOCK_PREFIX + "Ayrıntı için bilanço ve nakit akışı skor bileşenlerine bakın."],
             key_catalysts=[d.title for d in context.disclosures[:3]],
-            thesis_breakers=[_MOCK_PREFIX + "Net Debt/EBITDA or margin deterioration beyond current levels."],
-            what_to_watch=[_MOCK_PREFIX + "Next quarterly financial report and KAP disclosures."],
+            thesis_breakers=[_MOCK_PREFIX + "Net Borç/FAVÖK'ün yükselmesi veya marjların mevcut seviyenin altına gerilemesi."],
+            what_to_watch=[_MOCK_PREFIX + "Bir sonraki çeyrek finansal rapor ve KAP açıklamaları."],
         )

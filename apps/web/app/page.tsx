@@ -16,7 +16,7 @@ export default function HomePage() {
       <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 pb-24">
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
-            BIST Investment Intelligence
+            BIST Yatırım Zekâsı
           </h1>
           <p className="mt-2 text-sm text-muted">
             Bir şirket kodu girin — kanıta dayalı, izlenebilir yatırım araştırma ekranını görün.

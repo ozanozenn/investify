@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     openai_model: str = Field(default="gpt-4.1-mini")
     gemini_api_key: str | None = Field(default=None)
     gemini_model: str = Field(default="gemini-3.6-flash")
-    llm_prompt_version: str = Field(default="company-analysis-v1")
+    llm_prompt_version: str = Field(default="company-analysis-v2")
 
     # --- Versions (section 79) ---
     financial_engine_version: str = Field(default="v1")

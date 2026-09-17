@@ -122,7 +122,7 @@ def test_thesis_strength_weakened_for_roadmap_example():
 
     assert result.overall_score_delta == pytest.approx(-6.0)
     assert result.thesis_strength == "WEAKENED"
-    assert "declined" in result.thesis_strength_reason
+    assert "geriledi" in result.thesis_strength_reason
     assert result.valuation_direction == "more_expensive"  # PE rose 8.0 -> 10.0
 
 
@@ -139,7 +139,7 @@ def test_thesis_strength_strengthened_when_score_improves():
     )
     result = compute_snapshot_diff(previous=PREVIOUS, current=better)
     assert result.thesis_strength == "STRENGTHENED"
-    assert "improved" in result.thesis_strength_reason
+    assert "arttı" in result.thesis_strength_reason
     assert result.valuation_direction == "cheaper"  # PE fell 8.0 -> 7.0
 
 

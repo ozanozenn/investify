@@ -18,10 +18,10 @@ mechanism — set from the seed data or from the yfinance sector field
 from __future__ import annotations
 
 UNSUPPORTED_INDUSTRY_MESSAGE = (
-    "Specialized financial analysis not yet supported for this industry "
-    "(e.g. banks/insurers/REITs use different statement structures). "
-    "Generic industrial scoring is intentionally withheld rather than "
-    "shown with misleading figures. See docs/PHASE_1_SCOPE.md."
+    "Bu şirketin sektörü için özel finansal analiz henüz desteklenmiyor "
+    "(bankalar, sigorta şirketleri ve GYO'lar farklı bir finansal tablo "
+    "yapısı kullanır). Yanıltıcı bir skor göstermek yerine, genel sanayi "
+    "skorlaması bilinçli olarak gösterilmiyor."
 )
 
 

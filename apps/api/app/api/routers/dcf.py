@@ -128,7 +128,7 @@ async def get_company_dcf(
     )
     snapshot = result.scalar_one_or_none()
     if snapshot is None:
-        raise HTTPException(status_code=404, detail=f"No analysis yet for {ticker} — run a refresh first.")
+        raise HTTPException(status_code=404, detail=f"{ticker} için henüz bir analiz yok — önce bir refresh çalıştırın.")
 
     ctx = snapshot.context_json
     market = ctx.get("market") or {}
