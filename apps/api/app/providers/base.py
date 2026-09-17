@@ -85,6 +85,15 @@ class MacroObservationDTO:
     fetched_at: dt.datetime
 
 
+@dataclass
+class RawNewsItem:
+    title: str
+    source: str
+    url: str
+    published_at: dt.datetime
+    fetched_at: dt.datetime
+
+
 class MarketDataProvider(ABC):
     code: str
 
@@ -127,3 +136,13 @@ class CompanyDataProvider(ABC):
 
     @abstractmethod
     async def get_company_profile(self, ticker: str) -> dict: ...
+
+
+class NewsProvider(ABC):
+    """General market/company news — distinct from `DisclosureProvider`
+    (KAP), which covers official regulatory disclosures only (Phase 4)."""
+
+    code: str
+
+    @abstractmethod
+    async def get_news(self, ticker: str, company_name: str | None = None, limit: int = 15) -> list[RawNewsItem]: ...

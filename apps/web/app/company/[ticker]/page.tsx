@@ -8,6 +8,7 @@ import { useState } from "react";
 import { DcfPanel } from "@/components/dcf-panel";
 import { Disclaimer } from "@/components/disclaimer";
 import { HistoricalComparisonPanel } from "@/components/historical-comparison-panel";
+import { NewsPanel } from "@/components/news-panel";
 import { OutlookCard } from "@/components/outlook-card";
 import { PeerComparisonPanel } from "@/components/peer-comparison-panel";
 import { SearchBox } from "@/components/search-box";
@@ -306,7 +307,7 @@ function CompanyDetail({
         </CardBody>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader title="Son KAP Açıklamaları" subtitle="kap.org.tr" />
           <CardBody className="space-y-2">
@@ -331,6 +332,8 @@ function CompanyDetail({
             ))}
           </CardBody>
         </Card>
+
+        <NewsPanel ticker={ticker} />
 
         <Card>
           <CardHeader title="Makroekonomik Görünüm" subtitle="TCMB EVDS / piyasa" />

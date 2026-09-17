@@ -6,7 +6,7 @@ import uuid
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routers import auth, companies, comparisons, dcf, health, peers
+from app.api.routers import auth, companies, comparisons, dcf, health, news, peers
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, request_id_ctx
 
@@ -58,3 +58,4 @@ app.include_router(companies.router)
 app.include_router(dcf.router)
 app.include_router(peers.router)
 app.include_router(comparisons.router)
+app.include_router(news.router)
