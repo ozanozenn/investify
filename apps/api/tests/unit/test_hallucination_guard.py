@@ -8,7 +8,13 @@ from __future__ import annotations
 import datetime as dt
 
 from app.llm.hallucination_guard import find_unsupported_numbers
-from app.schemas.context import CompanyContext, DataQuality, MarketContext, StructuredAnalysisContext
+from app.schemas.context import (
+    CompanyContext,
+    DataQuality,
+    MacroSeriesPoint,
+    MarketContext,
+    StructuredAnalysisContext,
+)
 from app.schemas.financial import FinancialMetrics
 from app.schemas.llm_analysis import HorizonOutlook, LLMAnalysisResult
 from app.schemas.scoring import CategoryScore, ScoreResult
@@ -87,3 +93,52 @@ def test_genuinely_unverifiable_number_is_still_flagged():
     flags = find_unsupported_numbers(_context(), _result(text))
     assert len(flags) == 1
     assert "42.7" in flags[0]
+
+
+def test_grouped_thousands_number_is_read_as_one_token_not_fragments():
+    # Real bug found 2026-09-28: the old regex split a large Turkish-
+    # formatted TRY amount at each thousands separator, so it never
+    # actually checked the real number against the context.
+    context = _context()
+    context.metrics.free_cash_flow = 10733502000.0
+    text = "Serbest nakit akışı 10.733.502.000 TL seviyesindedir."
+    flags = find_unsupported_numbers(context, _result(text))
+    assert flags == []
+
+
+def test_sign_flip_on_grouped_number_is_flagged():
+    # The actual LLM hallucination this guard is meant to catch: a
+    # correct-magnitude number with the wrong sign.
+    context = _context()
+    context.metrics.free_cash_flow = 10733502000.0
+    text = "Serbest nakit akışı -10.733.502.000 TL seviyesindedir."
+    flags = find_unsupported_numbers(context, _result(text))
+    assert len(flags) == 1
+    assert "10.733.502.000" in flags[0]
+
+
+def test_percent_formatted_ratio_field_is_verified_against_context():
+    context = _context()  # ebitda_margin=0.264
+    text = "FAVÖK marjı %26,4 seviyesinde gerçekleşmiştir."
+    flags = find_unsupported_numbers(context, _result(text))
+    assert flags == []
+
+
+def test_turkish_month_name_date_in_prose_is_not_flagged():
+    # Real bug found live 2026-09-28: company-analysis-v3 asks the LLM to
+    # write in natural Turkish, which spells out dates like "23 Eylül 2026"
+    # instead of "23-09-2026" — the bare day-of-month digit was flagged.
+    text = "23 Eylül 2026 tarihli KAP bildiriminde belirtilen sözleşme imzalanmıştır."
+    flags = find_unsupported_numbers(_context(), _result(text))
+    assert flags == []
+
+
+def test_percent_points_macro_value_is_verified_against_context():
+    context = _context()
+    context.macro = [
+        MacroSeriesPoint(code="policy_rate", label="TCMB Politika Faizi", value=37.0,
+                          observation_date=dt.date.today(), is_mock=False)
+    ]
+    text = "TCMB politika faizi %37,0 seviyesindedir."
+    flags = find_unsupported_numbers(context, _result(text))
+    assert flags == []
