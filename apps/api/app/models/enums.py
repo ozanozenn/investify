@@ -40,4 +40,5 @@ class DisclosureCategory(str, enum.Enum):
     CONTRACT = "CONTRACT"
     MANAGEMENT = "MANAGEMENT"
     CAPITAL = "CAPITAL"
+    IPO = "IPO"
     OTHER = "OTHER"

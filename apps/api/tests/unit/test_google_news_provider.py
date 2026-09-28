@@ -103,3 +103,16 @@ async def test_malformed_xml_raises_provider_unavailable():
 
     with pytest.raises(ProviderUnavailableError):
         await provider.get_news("THYAO")
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_market_news_uses_general_market_query():
+    route = respx.route(host="news.google.com").mock(return_value=httpx.Response(200, text=_SAMPLE_RSS))
+    provider = GoogleNewsProvider()
+
+    items = await provider.get_market_news(limit=10)
+
+    assert len(items) == 3
+    requested_url = str(route.calls.last.request.url)
+    assert "q=Borsa" in requested_url

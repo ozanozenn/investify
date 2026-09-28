@@ -110,7 +110,7 @@ async def upsert_kap_disclosures(
                 kap_disclosure_index=raw.kap_disclosure_index,
                 title=raw.title,
                 subject=raw.subject,
-                category=categorize(raw.subject),
+                category=categorize(raw.subject, raw.title),
                 published_at=raw.published_at,
                 source_url=raw.source_url,
                 fetched_at=raw.fetched_at,

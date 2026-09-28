@@ -1,17 +1,14 @@
 import Link from "next/link";
 import { Disclaimer } from "@/components/disclaimer";
+import { NavBar } from "@/components/nav-bar";
 import { SearchBox } from "@/components/search-box";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 const QUICK_TICKERS = ["THYAO", "ASELS", "FROTO", "TUPRS", "GARAN", "SISE", "AKBNK", "EREGL"];
 
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between px-6 py-4">
-        <span className="text-sm font-semibold tracking-wide text-muted">INVESTIFY</span>
-        <ThemeToggle />
-      </header>
+      <NavBar />
 
       <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 pb-24">
         <div className="text-center">

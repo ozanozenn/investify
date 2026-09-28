@@ -2,17 +2,15 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ExternalLink, Loader2, RefreshCw } from "lucide-react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { DcfPanel } from "@/components/dcf-panel";
 import { Disclaimer } from "@/components/disclaimer";
 import { HistoricalComparisonPanel } from "@/components/historical-comparison-panel";
+import { NavBar } from "@/components/nav-bar";
 import { NewsPanel } from "@/components/news-panel";
 import { OutlookCard } from "@/components/outlook-card";
 import { PeerComparisonPanel } from "@/components/peer-comparison-panel";
-import { SearchBox } from "@/components/search-box";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge, toneForScore } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
@@ -63,7 +61,7 @@ export default function CompanyDetailPage() {
 
   return (
     <div className="min-h-screen pb-16">
-      <TopBar />
+      <NavBar showSearch />
 
       <div className="mx-auto max-w-6xl px-4 pt-4">
         {isLoading && <LoadingState ticker={ticker} />}
@@ -78,22 +76,6 @@ export default function CompanyDetailPage() {
         )}
       </div>
     </div>
-  );
-}
-
-function TopBar() {
-  return (
-    <header className="sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-        <Link href="/" className="shrink-0 text-sm font-semibold tracking-wide text-muted hover:text-foreground">
-          INVESTIFY
-        </Link>
-        <div className="max-w-md flex-1">
-          <SearchBox />
-        </div>
-        <ThemeToggle />
-      </div>
-    </header>
   );
 }
 

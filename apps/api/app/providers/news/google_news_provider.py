@@ -48,7 +48,14 @@ class GoogleNewsProvider(NewsProvider):
         self._timeout = timeout
 
     async def get_news(self, ticker: str, company_name: str | None = None, limit: int = 15) -> list[RawNewsItem]:
-        query = f"{ticker.upper()} hisse"
+        return await self._search(f"{ticker.upper()} hisse", limit, error_context=f"get_news({ticker})")
+
+    async def get_market_news(self, limit: int = 20) -> list[RawNewsItem]:
+        """General BIST/market news, not scoped to one company — used by the
+        market-wide "Haberler" page (Phase 4)."""
+        return await self._search("Borsa İstanbul", limit, error_context="get_market_news")
+
+    async def _search(self, query: str, limit: int, error_context: str) -> list[RawNewsItem]:
         url = f"{_BASE_URL}?q={quote(query)}&hl=tr&gl=TR&ceid=TR:tr"
         try:
             async with httpx.AsyncClient(timeout=self._timeout, headers=_HEADERS) as client:
@@ -56,7 +63,7 @@ class GoogleNewsProvider(NewsProvider):
                 resp.raise_for_status()
                 root = ElementTree.fromstring(resp.text)
         except (httpx.HTTPError, ElementTree.ParseError) as exc:
-            raise ProviderUnavailableError(self.code, f"get_news({ticker}) failed: {exc}") from exc
+            raise ProviderUnavailableError(self.code, f"{error_context} failed: {exc}") from exc
 
         now = dt.datetime.now(dt.timezone.utc)
         items: list[RawNewsItem] = []

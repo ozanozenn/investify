@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import datetime as dt
 import time
+from dataclasses import dataclass
 
 import httpx
 
@@ -16,6 +17,24 @@ from app.models.enums import DisclosureCategory
 from app.providers.base import DisclosureProvider, ProviderUnavailableError, RawDisclosure
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class RawMarketDisclosure:
+    """A KAP disclosure not scoped to a single ticker — used by the market-wide
+    "Haberler" feed (Phase 4), distinct from `RawDisclosure` which is always
+    fetched for one company as part of its analysis snapshot.
+    """
+
+    ticker: str | None
+    company_name: str
+    title: str
+    subject: str | None
+    category: DisclosureCategory
+    kap_disclosure_index: int
+    published_at: dt.datetime
+    source_url: str
+    fetched_at: dt.datetime
 
 _BASE_URL = "https://www.kap.org.tr"
 _HEADERS = {
@@ -36,15 +55,26 @@ _SUBJECT_CATEGORY_KEYWORDS: list[tuple[str, DisclosureCategory]] = [
     ("ihale", DisclosureCategory.CONTRACT),
     ("yönetim kurulu", DisclosureCategory.MANAGEMENT),
     ("genel müdür", DisclosureCategory.MANAGEMENT),
-    ("sermaye", DisclosureCategory.CAPITAL),
+    ("sermaye artır", DisclosureCategory.CAPITAL),
+    ("sermaye azalt", DisclosureCategory.CAPITAL),
+    ("bedelli", DisclosureCategory.CAPITAL),
+    ("bedelsiz", DisclosureCategory.CAPITAL),
     ("pay geri alım", DisclosureCategory.CAPITAL),
+    ("halka arz", DisclosureCategory.IPO),
+    ("izahname", DisclosureCategory.IPO),
+    ("borsada işlem görmeye başla", DisclosureCategory.IPO),
 ]
 
 
-def categorize(subject: str | None) -> DisclosureCategory:
-    if not subject:
+def categorize(subject: str | None, extra_text: str | None = None) -> DisclosureCategory:
+    """`subject` is often a generic regulatory template name (e.g. "Özel Durum
+    Açıklaması (Genel)" for every ODA-class disclosure); the real signal is
+    frequently only in the free-text summary/title instead — so callers
+    should pass that as `extra_text` whenever they have it.
+    """
+    lowered = f"{subject or ''} {extra_text or ''}".lower()
+    if not lowered.strip():
         return DisclosureCategory.OTHER
-    lowered = subject.lower()
     for keyword, category in _SUBJECT_CATEGORY_KEYWORDS:
         if keyword in lowered:
             return category
@@ -112,6 +142,57 @@ class KapDisclosureProvider(DisclosureProvider):
                     title=str(item.get("summary") or title),
                     subject=item.get("subject"),
                     published_at=published,
+                    source_url=f"{_BASE_URL}/tr/Bildirim/{index}",
+                    fetched_at=now,
+                )
+            )
+        return disclosures
+
+    async def get_market_disclosures(
+        self, lookback_days: int = 3, limit: int = 30
+    ) -> list[RawMarketDisclosure]:
+        """Market-wide feed across every KAP member (empty `mkkMemberOidList`
+        returns the full stream, live-verified 2026-09-28) — independent of
+        any single ticker, used by the "Haberler" page rather than a
+        company's own analysis snapshot.
+        """
+        try:
+            client = await self._throttled_client()
+            async with client:
+                to_date = dt.date.today()
+                from_date = to_date - dt.timedelta(days=lookback_days)
+                resp = await client.post(
+                    "/tr/api/disclosure/members/byCriteria",
+                    json={
+                        "fromDate": from_date.isoformat(),
+                        "toDate": to_date.isoformat(),
+                        "mkkMemberOidList": [],
+                        "subjectList": [],
+                    },
+                )
+                resp.raise_for_status()
+                raw = resp.json()
+        except (httpx.HTTPError, ValueError) as exc:
+            raise ProviderUnavailableError(self.code, f"get_market_disclosures failed: {exc}") from exc
+
+        now = dt.datetime.now(dt.timezone.utc)
+        disclosures: list[RawMarketDisclosure] = []
+        for item in raw[:limit]:
+            index = item.get("disclosureIndex")
+            if index is None:
+                continue
+            stock_codes = item.get("stockCodes")
+            ticker = stock_codes.split(",")[0].strip() if stock_codes else None
+            subject = item.get("subject")
+            disclosures.append(
+                RawMarketDisclosure(
+                    ticker=ticker,
+                    company_name=str(item.get("kapTitle") or ticker or "—"),
+                    title=str(item.get("summary") or subject or "KAP Bildirimi"),
+                    subject=subject,
+                    category=categorize(subject, item.get("summary")),
+                    kap_disclosure_index=int(index),
+                    published_at=_parse_kap_datetime(item.get("publishDate")),
                     source_url=f"{_BASE_URL}/tr/Bildirim/{index}",
                     fetched_at=now,
                 )
