@@ -208,3 +208,51 @@ block the Phase 1 Definition of Done; all are candidates for Phase 2+.
   `"sermaye artır"`/`"sermaye azalt"`/`"bedelli"`/`"bedelsiz"`. The keyword
   list is still best-effort substring matching, not exhaustive — expect to
   keep finding and adding cases the same way.
+- **LLM-generated free cash flow figure had a flipped sign, and slipped
+  through the hallucination guard undetected — found via an independent
+  data-accuracy audit requested by the product owner, 2026-09-28.** A real
+  ASELS analysis showed "-10.733.502.000 TL serbest nakit akışı" in a
+  thesis-invalidation bullet; the true value (confirmed independently
+  against live yfinance data, and self-contradicted by the same report's
+  own positive FCF margin figure) was **+10.733.502.000 TL**. Root cause:
+  a pure LLM narrative hallucination — the deterministic `FinancialMetrics`
+  object held the correct positive value throughout, no engine bug — that
+  reached the user because (a) `hallucination_guard.py`'s number regex
+  could not parse grouped-thousands numbers as a single token (it split
+  "-10.733.502.000" into meaningless fragments), so it never actually
+  checked the real value against the context, and (b) even when the guard
+  does flag something, `_meta.hallucination_flags` is advisory-only —
+  logged, never blocking or triggering a retry. Of 19 other numbers
+  independently audited for this same report, 18 reproduced exactly from
+  live source data using the app's own formulas — the deterministic
+  engines are solid; this was specifically an LLM free-text generation
+  failure. Fixed the number-parsing regex (see next item); did **not** add
+  blocking/retry-on-hallucination behavior — flags are still advisory-only,
+  now at least trustworthy. Consider revisiting whether a non-empty flag
+  list should trigger one automatic retry before persisting.
+- **Number formatting + prompt rewrite (2026-09-28, product-owner-directed).**
+  Numbers embedded in the LLM prompt were raw unrounded floats
+  (`0.8259859533087344`), because v1/v2 explicitly forbade the LLM from
+  reformatting them (needed for the hallucination guard to verify them
+  byte-for-byte). This produced unreadable, stat-dump-style LLM prose,
+  flagged directly by the product owner from a real screenshot. Fixed by
+  moving formatting into the deterministic layer instead
+  (`llm/number_format.py`, `llm/context_formatter.py`): numbers are now
+  rendered as human-readable Turkish strings (`%82,6`, `56,7x`,
+  `48,9 milyar TL`) before the LLM ever sees them, and the hallucination
+  guard's parser was rewritten to undo that formatting when checking LLM
+  output instead of expecting plain decimals. New prompt
+  `company-analysis-v3.md` was written directly from a 10-question
+  conversation with the product owner about desired tone/content — see
+  `docs/LLM.md`. A second real regression was found and fixed live while
+  verifying this against a real Gemini call: v3's more conversational tone
+  led the LLM to spell dates in natural Turkish ("23 Eylül 2026") rather
+  than numeric form, which `hallucination_guard.py`'s date-stripping regex
+  didn't recognize yet, producing 5 false-positive flags — fixed by
+  extending `_DATE_RE`. Known residual limitation: the formatter's
+  single-ambiguous-group number parsing (is "5.678" a decimal or the
+  integer 5678?) uses a heuristic (leading zero ⇒ decimal, otherwise a
+  trailing 3-digit group ⇒ grouped) that isn't 100% unambiguous in theory,
+  but the app's own formatter never actually emits the colliding case (it
+  only ever produces 1-2 decimal places, never exactly 3), so this has not
+  caused a false result in practice.

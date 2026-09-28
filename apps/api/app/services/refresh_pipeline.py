@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import Settings, get_analysis_config
+from app.core.config import Settings, get_analysis_config, get_tcmb_calendar_config
 from app.core.logging import get_logger
 from app.financial_engine import formulas
 from app.financial_engine.engine import compute_financial_metrics
@@ -49,6 +49,19 @@ from app.valuation_engine.dcf import compute_dcf
 from app.valuation_engine.engine import compute_valuation
 
 logger = get_logger(__name__)
+
+
+def _next_rate_decision_date() -> dt.date | None:
+    """Nearest upcoming TCMB PPK meeting date, if any is still known in
+    `config/tcmb_calendar.yaml` — gives the LLM one concrete, real
+    near-term macro date to reference instead of inventing one."""
+    today = dt.date.today()
+    upcoming = sorted(
+        d
+        for d in (dt.date.fromisoformat(m["date"]) for m in get_tcmb_calendar_config()["meetings"])
+        if d >= today
+    )
+    return upcoming[0] if upcoming else None
 
 
 @dataclass
@@ -296,6 +309,7 @@ async def run_refresh(
         data_quality=data_quality,
         sources=sources,
         unsupported_reason=unsupported_reason,
+        next_rate_decision_date=_next_rate_decision_date(),
     )
 
     try:

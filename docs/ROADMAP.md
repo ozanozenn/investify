@@ -89,6 +89,42 @@ later, rather than build it speculatively now.
   per roadmap section 83 — must not answer from uncontrolled internet
   knowledge) — not started.
 
+## Kalite ve okunabilirlik turu (2026-09-28, user-directed, feature freeze)
+
+Not a new phase — the user paused new features to focus on data accuracy
+and LLM output quality of what already exists, per an explicit "onayıma
+kadar extra feature eklemeyeceğiz" instruction.
+
+- ✅ **Data-accuracy audit** — an independent agent cross-checked 19
+  ASELS analysis numbers against live `yfinance` data using the app's own
+  formulas. 18/19 reproduced exactly (deterministic engines are solid);
+  found one real bug: an LLM-generated free cash flow figure with a
+  flipped sign, undetected because the hallucination guard's number regex
+  couldn't parse grouped-thousands numbers. See `docs/TECHNICAL_DEBT.md`
+  for the full root-cause writeup.
+- ✅ **LLM prompt rewritten (`company-analysis-v3.md`)** from a structured
+  10-question conversation with the user about desired output: numbers
+  now pre-formatted and used sparingly (not a stat dump), conversational-
+  advisor tone, jargon explained in plain language with the abbreviation
+  in parentheses, missing data stated explicitly ("bu konuda yorum
+  yapamıyoruz"), scores always paired with a plain-language interpretation,
+  and genuine scenario-based short/medium/long-term outlook referencing
+  real dates (a new `next_rate_decision_date` context field, sourced from
+  the Takvim feature's TCMB calendar config) instead of ever inventing one.
+  Still no BUY/SELL/HOLD or target price under any framing.
+- ✅ **Number formatting moved to the deterministic layer**
+  (`llm/number_format.py`, `llm/context_formatter.py`) — the LLM now
+  receives (and must reproduce verbatim, sign included) human-readable
+  Turkish-formatted numbers instead of raw floats.
+- ✅ **Hallucination guard rewritten** to parse the formatted numbers above
+  (grouped thousands, `%`/`x`/`milyar`/`milyon`/`bin` suffixes, Turkish-
+  convention sign-before-percent) instead of a naive per-character-group
+  regex. Live-verified against real Gemini output: 0 flags on a
+  well-formed analysis, correctly flags an injected sign-flip.
+- Not done: making `hallucination_flags` blocking/retry-triggering
+  (still advisory-only/logged) or surfacing them in the frontend UI —
+  both noted as candidate follow-ups, not requested yet.
+
 ## Phase 5+ — Advanced
 
 Consensus analyst data (if a legally usable source is found), management

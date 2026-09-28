@@ -77,3 +77,4 @@ class StructuredAnalysisContext(BaseModel):
     data_quality: DataQuality
     sources: list[SourceRef]
     unsupported_reason: str | None = None
+    next_rate_decision_date: dt.date | None = None
