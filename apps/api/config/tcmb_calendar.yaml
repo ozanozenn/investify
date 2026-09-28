@@ -1,0 +1,29 @@
+# TCMB PPK (Para Politikası Kurulu) faiz kararı toplantı tarihleri.
+#
+# TCMB bu takvimi resmi olarak yıllık/yarı yıllık yayınlar; burada elle
+# kopyalanmış ve tarihi belirtilmiş bir anlık görüntüdür — otomatik
+# scrape edilmiyor (TCMB'nin ilgili sayfaları PPK açıklama/özet metinlerini
+# statik olarak listeler, makine tarafından güvenle ayrıştırılacak bir JSON/
+# API sunmuyor). Yeni yıl takvimi TCMB tarafından yayınlandığında bu dosya
+# elle güncellenmelidir.
+#
+# Kaynak (doğrulandı 2026-09-28):
+# https://www.tcmb.gov.tr/wps/wcm/connect/TR/TCMB+TR/Main+Menu/Temel+Faaliyetler/Para+Politikasi/PPK/2026
+# https://www.tcmb.gov.tr/wps/wcm/connect/TR/TCMB+TR/Main+Menu/Temel+Faaliyetler/Para+Politikasi/PPK/2027
+#
+# Not: Her toplantı için TCMB ayrıca ~1 hafta sonra bir "Toplantı Özeti"
+# yayınlıyor; bu takvimde sadece karar/açıklama tarihi tutuluyor (kullanıcı
+# için asıl önemli olan tarih).
+meetings:
+  - date: "2026-01-22"
+  - date: "2026-03-12"
+  - date: "2026-04-22"
+  - date: "2026-06-11"
+  - date: "2026-07-23"
+  - date: "2026-09-10"
+  - date: "2026-10-22"
+  - date: "2026-12-10"
+  - date: "2027-01-21"
+  - date: "2027-03-18"
+  - date: "2027-04-22"
+  - date: "2027-06-10"

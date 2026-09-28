@@ -58,3 +58,25 @@ export function getMarketNews(limit = 20): Promise<MarketNewsResult> {
 export function getMarketDisclosures(limit = 30): Promise<MarketDisclosureResult> {
   return request(`/api/market/disclosures?limit=${limit}`);
 }
+
+export interface RateDecisionEvent {
+  date: string;
+}
+
+export interface CompanyEvent {
+  ticker: string | null;
+  company_name: string;
+  category: string;
+  title: string;
+  announced_at: string;
+  source_url: string;
+}
+
+export interface CalendarResult {
+  rate_decisions: RateDecisionEvent[];
+  company_events: CompanyEvent[];
+}
+
+export function getCalendar(): Promise<CalendarResult> {
+  return request(`/api/calendar`);
+}

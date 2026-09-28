@@ -43,7 +43,7 @@ later, rather than build it speculatively now.
 - REIT/GYO (NAV, NAV discount, occupancy) and Holding (SOTP, holding
   discount) engines.
 
-## Phase 4 — News, watchlist, alerts (in progress — news done)
+## Phase 4 — News, watchlist, alerts (in progress — news + calendar done)
 
 - ✅ **News aggregation** — `app/providers/news/google_news_provider.py`
   (Google News RSS search, no API key), title-similarity dedup. No
@@ -51,6 +51,35 @@ later, rather than build it speculatively now.
   minimal first, add later if wanted); stateless endpoint
   (`GET /api/companies/{ticker}/news`), not persisted, not wired into the
   LLM context — independent of the financial-analysis pipeline.
+- ✅ **Site navigation + market-wide "Haberler" page** (2026-09-28) —
+  `components/nav-bar.tsx` (Ana Sayfa / Haberler / Takvim, on every page),
+  `/haberler` combining `GET /api/market/disclosures` (KAP market-wide feed
+  — live-verified an empty `mkkMemberOidList` returns every BIST member's
+  disclosures, not just tracked companies) with `GET /api/market/news`
+  (general "Borsa İstanbul" Google News query). Fixed a real KAP
+  categorization bug while wiring this up: `categorize()` only looked at
+  the `subject` field, which is often a generic regulatory template name
+  ("Özel Durum Açıklaması (Genel)") — the real signal (e.g. "Pay Geri Alım
+  İşlemleri") is frequently only in the free-text summary/title. Now checks
+  both; also affects the existing per-company KAP list
+  (`services/persistence.py`). Also tightened the `CAPITAL` keyword from a
+  bare "sermaye" (false-matched "Sermaye Piyasası Aracı" bond/coupon
+  disclosures) to "sermaye artır/azalt" + "bedelli"/"bedelsiz".
+- ✅ **Takvim (calendar), V1 scope** (2026-09-28, user decision) —
+  `GET /api/calendar`: TCMB PPK faiz kararı tarihleri (real, forward-looking,
+  from `config/tcmb_calendar.yaml` — TCMB publishes no scrapeable JSON/API
+  for this, so it's a manually-sourced, citation-commented snapshot updated
+  when TCMB publishes a new year's calendar) + KAP market-wide disclosures
+  filtered to DIVIDEND/CAPITAL/IPO (new `DisclosureCategory.IPO`, keywords
+  "halka arz"/"izahname"). Deliberately does **not** attempt to parse exact
+  future payment/record dates out of KAP disclosure detail pages — that
+  page is a client-rendered SPA with no JSON API (confirmed live), and
+  per-template scraping was explicitly deferred by the user in favor of a
+  fast, honest V1 that shows announcement dates as what they are (labelled
+  in the UI), not invented execution dates. IPO calendar reuses the same
+  KAP market feed rather than a separate scraper (no dedicated BIST IPO
+  data source integrated). V2 (per-template detail-page parsing for exact
+  dates) is a candidate future iteration, not started.
 - Watchlist — not started (user decision 2026-09-17: deferred, not
   requested yet).
 - Alert engine (score change, new important KAP, valuation threshold) —

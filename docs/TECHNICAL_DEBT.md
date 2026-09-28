@@ -191,3 +191,20 @@ block the Phase 1 Definition of Done; all are candidates for Phase 2+.
   instead of Docker Postgres (no Docker available) — the same caveat as
   the existing "Testing" note above, now doubly true until Docker is set
   up on this machine.
+- **KAP disclosure categorization (`providers/disclosure/kap_provider.py`)
+  was silently inaccurate since Phase 1** — `categorize()` only inspected
+  the `subject` field, but KAP frequently sends a generic regulatory
+  template name there (e.g. "Özel Durum Açıklaması (Genel)") and puts the
+  actual signal ("Pay Geri Alım İşlemleri", "Bedelli Sermaye Artırımı...")
+  only in `summary`/title. Found live 2026-09-28 while building the
+  market-wide "Haberler"/Takvim feed, where it mattered a lot more (most
+  buyback/capital-increase disclosures were silently falling into `OTHER`).
+  Fixed by having `categorize()` accept an optional second text argument
+  and checking both; both call sites (`kap_provider.py`'s own
+  `get_market_disclosures`, and `services/persistence.py`'s per-company
+  disclosure save path) now pass it. Also tightened the bare `"sermaye"`
+  keyword (false-matched "Sermaye Piyasası Aracı", the generic bond/debt-
+  instrument regulatory term, on ordinary coupon-payment disclosures) to
+  `"sermaye artır"`/`"sermaye azalt"`/`"bedelli"`/`"bedelsiz"`. The keyword
+  list is still best-effort substring matching, not exhaustive — expect to
+  keep finding and adding cases the same way.
