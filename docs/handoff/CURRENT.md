@@ -2,56 +2,42 @@
 _Güncelleme: 2026-10-05 · Branch: development_
 
 ## Hedef
-Kurulan agent sistemini doğrulamak, ADR'lerin doğruluğunu denetlemek ve
-`/feature` akışını ilk kez gerçek bir işte denemek.
+Agent altyapısını verimli kullanmayı öğrenmek ve token maliyetini ölçerek
+düşürmek. Kılavuz, ölçüm dokümanı ve MCP onarımı bu işin parçası.
 
 ## Tamamlanan
-- **ADR doğruluk denetimi**: 006-010'daki her somut iddia (dosya yolu,
-  fonksiyon adı, config değeri) kodla karşılaştırıldı. **Bir gerçek hata
-  bulundu ve düzeltildi**: `ADR-008` "iki sağlayıcı da SDK'nın parse
-  kolaylığına güvenmez" diyordu — yanlış; `OpenAIProvider` `message.parsed`'a
-  güveniyor, sadece `GeminiProvider` elle yeniden doğruluyor. Kalan tüm
-  iddialar teyit edildi.
-- **Agent sisteminin objektif değerlendirmesi**: belgeleme tarafı (AGENTS.md,
-  ADR, handoff+hook) kendini kanıtladı; subagent'lar + `/feature` ucuz ama
-  henüz kanıtlanmamış durumda.
-- **`/feature` ilk denemesi** (frontend testi konusunda, 1-2. aşama):
-  keşif aşaması gerçek değer üretti (aşağıdaki tuzaklar), plan aşaması
-  kapsamı doğru şekilde kullanıcıya getirdi ve iş **bilinçli olarak
-  durduruldu**. Akışın 3-7. aşamaları hâlâ hiç çalıştırılmadı.
-- Frontend test keşfinin tüm tuzakları `ADR-010`'a kaydedildi, böylece o iş
-  günün birinde yapılırsa analiz ikinci kez yapılmayacak.
+- MCP `codebase-memory` bağlantısı onarıldı: bayat kilit `/tmp/cbm-daemon-501/`
+  kenara taşındı (silinmedi), indeks yeniden oluşturuldu (1643 düğüm, 5253 kenar).
+- Daemon kararı: `daemon start` **açılmadı** (oturuma bağlı kalıyor, 4 MB).
+- Token ölçümü: `docs/TOKEN_USAGE.md`. Bulgu: büyük yeniden-yazımların
+  %57'si 30+ dk boşluk sonrası; 1-5 dk'da %0; model değişimi önbelleği sıfırlar.
+- Çalışma kılavuzu: `docs/WORKFLOW_GUIDE.md`.
+- Agent kurulumu commit'lendi ve push edildi (`6054b28`, `e817834`, `26c5599`,
+  `14d8e5b`); geri alma prosedürü `docs/AGENT_SETUP.md`.
 
 ## Devam eden / yarım kalan
-- Yok. Ama **büyük bir iş bloğu commit edilmemiş durumda** (aşağıya bak).
+- `docs/TOKEN_USAGE.md` ve `docs/WORKFLOW_GUIDE.md` **commit edilmedi** (untracked).
+- `docs/WORKFLOW_GUIDE.md`, `AGENTS.md` dokümantasyon haritasına henüz bağlı değil.
 
 ## Sıradaki adımlar
-1. **Commit**: `AGENTS.md`, `CLAUDE.md`, `.claude/` (agents/skills/hooks/
-   settings), 5 yeni ADR, `ADR-002` değişikliği, `docs/ARCHITECTURE.md`,
-   `docs/TECHNICAL_DEBT.md`, `docs/handoff/` — hepsi `6ea4aa1`'den beri
-   commit edilmedi. Kullanıcı henüz commit talimatı vermedi.
-2. `/feature` akışının 3-7. aşamalarını (uygulama → test-runner →
-   code-reviewer → docs-keeper → handoff) ilk gerçek özellikte dene.
-3. "Feature freeze / sadece doğrulama" modu hâlâ geçerli — yeni özellik
-   başlatmadan önce onay al (kalıcı hafıza:
-   `feedback_feature_freeze_verification_mode`).
+1. Kullanıcı onayıyla: `TOKEN_USAGE.md` + `WORKFLOW_GUIDE.md` commit, AGENTS.md'ye bağlantı.
+2. Bir sonraki uzun oturumda token ölçümünü tekrarla, `TOKEN_USAGE.md`'yi doğrula
+   (şu an tek oturum verisi var, genelleme yapılmadı).
+3. `/feature` akışını ilk gerçek büyük işte dene (hâlâ hiç uçtan uca çalışmadı).
 
 ## Alınan kararlar
-- **Frontend test altyapısı şimdilik kurulmayacak** (2026-10-05). Gerekçe:
-  bu projede bulunan her gerçek hata backend'deydi; frontend tasarım gereği
-  hesap yapmayan bir gösterim katmanı; `typecheck`+`build`+tarayıcı
-  doğrulaması mevcut risk profilini karşılıyor. **Tetikleyici**: frontend
-  sayı *dönüştürmeye* başlarsa (şu an tek örnek: `dcf-panel`'deki `/100`)
-  veya ikinci bir geliştirici katılırsa. Tam gerekçe `ADR-010`'da.
-- `ADR-010` yeniden yazılmadı — "karar verildi, uygulanmadı" hâli zaten
-  doğruydu; üstüne erteleme gerekçesi + tuzak listesi eklendi.
+- Daemon kalıcı yapılmadı: fayda ~8 sn/oturum, risk: arka planda unutulan süreç.
+- Bayat kilit için **taşı, silme** — geri alınabilirlik.
+- Her iş bitiminde `/handoff`; `/clear` yalnızca handoff'tan sonra.
+- Frontend test altyapısı ertelendi, gerekçe `ADR-010`'da.
 
 ## Açık sorular / riskler
-- **codebase-memory MCP bağlanamıyor** (CONNECTION_CLOSED). Bu, CLAUDE.md'nin
-  "önce graph araçlarını kullan" talimatını fiilen işlevsiz bırakıyor;
-  keşif agent'ı read/grep moduna düşerek çalıştı. Bağlantı kontrol edilmeli.
+- MCP bağlantısı oturum yeniden başlatılınca yeniden test edilmeli.
+- Token örüntüsü tek oturumda gözlendi; 2-3 oturum daha doğrulanmalı.
 
 ## Dikkat
-Bu oturumda `/feature` ilk çağrıldığında "no matching commands" verdi —
-neden: skill dosyası oturum **ortasında** oluşturulmuştu. Oturum yeniden
-başlatılınca düzeldi. Yeni skill/agent ekledikten sonra oturumu yenile.
+- Yeni skill/agent eklenince oturumu yeniden başlat (oturum ortasında görünmez).
+- MCP `CONNECTION_CLOSED` olursa önce `/tmp/cbm-daemon-501/` içindeki sahipsiz
+  `*.lock` dosyalarına bak; `codebase-memory-mcp cli index_status` ile tanıla.
+- Bu oturumdaki bilgi: `codebase-memory-mcp` CLI'si daemon yokken geçici
+  daemon başlatır, her komut ~başlangıç bedeli öder.
