@@ -82,6 +82,10 @@ Docker Compose orkestrasyon · Redis (hafif önbellek, Phase 1 kapsamında).
 - Test silmek/atlamak yerine düzelt; zorunluysa nedenini yaz.
 - Frontend state yönetimi sadece React Query — ayrı bir global store
   (Redux/Zustand vb.) ekleme; gerekirse önce neden yetersiz kaldığını yaz.
+- Bu agent kurulumunun parçalarını (`AGENTS.md`, `CLAUDE.md`, `.claude/*`,
+  ADR'ler, devir notu) **kullanıcı onayı olmadan kaldırma/geri alma** —
+  gereksiz veya maliyetli bulursan öner ve onay bekle. Tarifler:
+  `docs/AGENT_SETUP.md`.
 
 ## Dokümantasyon haritası
 - `docs/ARCHITECTURE.md` — sistem mimarisi
@@ -89,3 +93,4 @@ Docker Compose orkestrasyon · Redis (hafif önbellek, Phase 1 kapsamında).
   yeniden numaralama — mevcut referansları kırar)
 - `docs/ROADMAP.md` — faz durumu · `docs/TECHNICAL_DEBT.md` — bilinen açıklar
 - `docs/handoff/CURRENT.md` — güncel durum / devir notu
+- `docs/AGENT_SETUP.md` — bu kurulumun kapsamı, maliyeti ve geri alma tarifi
