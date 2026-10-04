@@ -101,7 +101,10 @@ block the Phase 1 Definition of Done; all are candidates for Phase 2+.
   Definition-of-Done item delivered at reduced rigor — flagged here rather
   than silently claimed as done. **Fix**: add Vitest + React Testing
   Library and at minimum cover the 4 states in `app/company/[ticker]/page.tsx`
-  (loading, error, unsupported-industry banner, populated).
+  (loading, error, unsupported-industry banner, populated). Still true as of
+  Phase 4 — now formally decided (not just flagged) in
+  [ADR-010](adr/ADR-010-test-strategy-and-repo-structure.md); still not
+  implemented.
 
 ## Auth
 

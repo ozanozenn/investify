@@ -1,7 +1,7 @@
 # ADR-002: Phase 1 data provider selection
 
 ## Status
-Accepted (Phase 1)
+Accepted (Phase 1) — Amended by [ADR-009](ADR-009-phase4-data-sources-news-and-calendar.md) (Phase 4: news aggregation, event calendar)
 
 ## Context
 Section 92/93 of the roadmap require researching current, real options before
