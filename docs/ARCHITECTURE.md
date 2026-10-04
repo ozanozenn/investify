@@ -48,6 +48,31 @@ section 37 (partial failure handling) require. A stage failing never raises
 past the pipeline boundary; it degrades the result and is shown to the user
 as `"X data unavailable"`.
 
+## Phase 2-4 additions (structural summary — see `docs/ROADMAP.md` for full detail)
+
+The pipeline shape above hasn't changed; these are new branches off it:
+
+- **Valuation**: `valuation_engine/dcf.py` adds a DCF engine (Bear/Base/Bull
+  scenarios, WACC × terminal-growth sensitivity) alongside the original
+  relative valuation, attached to `ValuationMetrics.dcf`.
+- **Comparison services**: `services/peer_comparison.py` (sector/industry
+  median comparison) and `services/snapshot_diff.py` (comparison against
+  the previous `AnalysisSnapshot`, thesis-strength verdict) — both read
+  existing persisted data, no new provider stages, no schema change
+  (ADR-005 held).
+- **LLM**: `llm/gemini_provider.py` added as a second real provider
+  (ADR-008). `llm/number_format.py` + `llm/context_formatter.py` sit
+  between `context_builder` and the provider call — they turn the raw
+  `StructuredAnalysisContext` into the human-formatted JSON the prompt
+  actually embeds (see `docs/LLM.md`); `hallucination_guard.py` verifies
+  against that same formatting.
+- **Market-wide feeds** (`api/routers/market.py`, `api/routers/calendar.py`):
+  unlike every router above, these are **not** per-ticker and don't touch
+  `AnalysisSnapshot` at all — they query `GoogleNewsProvider`/
+  `KapDisclosureProvider`'s market-wide methods directly and are stateless
+  (ADR-009). `next_rate_decision_date` is the one piece of calendar data
+  that *does* feed into a company's own `StructuredAnalysisContext`.
+
 ## Import direction (enforced by convention, see ADR-001)
 
 ```
