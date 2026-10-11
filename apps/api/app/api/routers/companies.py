@@ -19,22 +19,32 @@ from app.services.refresh_pipeline import run_refresh
 router = APIRouter(prefix="/api/companies", tags=["companies"], dependencies=[Depends(require_user)])
 logger = get_logger(__name__)
 
+_SEARCH_LIMIT = 10
+
 
 @router.get("/search", response_model=list[CompanySearchResult])
 async def search_companies(q: str = Query(..., min_length=1), db: AsyncSession = Depends(get_db)):
-    results = search_tickers(q)
+    results = search_tickers(q, limit=_SEARCH_LIMIT)
     out = [CompanySearchResult(ticker=r["ticker"], name=r["name"]) for r in results]
+    seen = {r.ticker for r in out}
 
-    if not out:
-        # Fall back to already-bootstrapped companies in the DB (covers
-        # tickers resolved live via yfinance that aren't in the static index).
-        like = f"%{q.upper()}%"
-        rows = await db.execute(
-            select(Ticker, Company).join(Company, Ticker.company_id == Company.id).where(Ticker.symbol.like(like))
-        )
-        for ticker_row, company in rows.all():
+    # Always merge in already-bootstrapped companies from the DB (covers
+    # tickers resolved live via yfinance that aren't in the static index).
+    # This used to run only when the static index had zero matches, which
+    # hid previously-opened companies whenever any static ticker matched.
+    term = q.strip()
+    rows = await db.execute(
+        select(Ticker, Company)
+        .join(Company, Ticker.company_id == Company.id)
+        .where(Ticker.symbol.like(f"%{term.upper()}%") | Company.name.ilike(f"%{term}%"))
+        .order_by(Ticker.symbol)
+        .limit(_SEARCH_LIMIT)
+    )
+    for ticker_row, company in rows.all():
+        if ticker_row.symbol not in seen:
+            seen.add(ticker_row.symbol)
             out.append(CompanySearchResult(ticker=ticker_row.symbol, name=company.name))
-    return out
+    return out[:_SEARCH_LIMIT]
 
 
 def _snapshot_to_response(snapshot: AnalysisSnapshot, stage_results: dict[str, str] | None = None) -> CompanyAnalysisResponse:

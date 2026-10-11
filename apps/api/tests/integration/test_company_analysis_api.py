@@ -74,3 +74,27 @@ async def test_search_returns_static_index_matches(client):
 async def test_health_check_does_not_require_auth(client):
     resp = await client.get("/health")
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_search_includes_bootstrapped_companies_alongside_static_matches(client):
+    # ASTRAX is not in the static index, but "AST" also matches ASTOR there.
+    # The DB fallback used to run only when the static index had zero hits,
+    # hiding previously-opened companies whenever any static ticker matched.
+    await client.post("/api/companies/ASTRAX/refresh")
+
+    resp = await client.get("/api/companies/search", params={"q": "AST"})
+    assert resp.status_code == 200
+    tickers = [r["ticker"] for r in resp.json()]
+    assert "ASTOR" in tickers
+    assert "ASTRAX" in tickers
+    assert len(tickers) == len(set(tickers))
+
+
+@pytest.mark.asyncio
+async def test_search_matches_bootstrapped_company_by_name(client):
+    await client.post("/api/companies/ZZQQ/refresh")  # name: "ZZQQ Test A.Ş."
+
+    resp = await client.get("/api/companies/search", params={"q": "zzqq test"})
+    assert resp.status_code == 200
+    assert any(r["ticker"] == "ZZQQ" for r in resp.json())
