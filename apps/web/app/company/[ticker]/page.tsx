@@ -16,7 +16,6 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { BigScore, ScoreBar } from "@/components/ui/score-bar";
 import { StatTile } from "@/components/ui/stat-tile";
-import { MiniBarChart } from "@/components/charts/mini-bar-chart";
 import { ApiError, getCompanyAnalysis, refreshCompanyAnalysis } from "@/lib/api";
 import { formatCompact, formatDateTime, formatMultiple, formatNumber, formatPercent, formatRelativeTime } from "@/lib/format";
 import type { CategoryScore } from "@/lib/types";
@@ -115,7 +114,7 @@ function CompanyDetail({
   onRefresh: () => void;
   refreshing: boolean;
 }) {
-  const { company, market, metrics, financial_history, valuation, scores, macro, disclosures, analysis, data_quality, sources, unsupported_reason, versions } = data;
+  const { company, market, metrics, valuation, scores, macro, disclosures, analysis, data_quality, sources, unsupported_reason, versions } = data;
 
   const whatMattersNow = [...analysis.key_catalysts.slice(0, 3), ...analysis.key_risks.slice(0, 2)].slice(0, 5);
 
@@ -188,40 +187,6 @@ function CompanyDetail({
               />
             ))}
           </div>
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader title="Finansal Performans" subtitle="Son yıllık dönemler" />
-        <CardBody className="grid gap-6 sm:grid-cols-2">
-          <MiniBarChart
-            label="Hasılat"
-            colorVar="--accent"
-            currency={market.currency}
-            help="Hasılat (Ciro) — şirketin dönem içinde sattığı ürün/hizmetlerden elde ettiği toplam gelir, hiçbir masraf düşülmeden."
-            data={financial_history.map((h) => ({ year: h.fiscal_year, value: h.revenue }))}
-          />
-          <MiniBarChart
-            label="FAVÖK"
-            colorVar="--positive"
-            currency={market.currency}
-            help="FAVÖK (Faiz, Vergi, Amortisman Öncesi Kâr) — şirketin ana faaliyetlerinden ne kadar nakit üretebildiğini gösteren, borç/vergi yapısından bağımsız bir kârlılık ölçüsü."
-            data={financial_history.map((h) => ({ year: h.fiscal_year, value: h.ebitda }))}
-          />
-          <MiniBarChart
-            label="Net Kâr"
-            colorVar="--warning"
-            currency={market.currency}
-            help="Net Kâr — tüm giderler, faizler ve vergiler düşüldükten sonra şirkete kalan nihai kâr."
-            data={financial_history.map((h) => ({ year: h.fiscal_year, value: h.net_income }))}
-          />
-          <MiniBarChart
-            label="Serbest Nakit Akışı"
-            colorVar="--accent"
-            currency={market.currency}
-            help="Serbest Nakit Akışı — şirketin işletme faaliyetlerinden ürettiği nakitten yatırım harcamaları (CAPEX) düşüldükten sonra elinde kalan, temettü/borç ödemesi/büyüme için kullanılabilir nakit."
-            data={financial_history.map((h) => ({ year: h.fiscal_year, value: h.free_cash_flow }))}
-          />
         </CardBody>
       </Card>
 
@@ -452,6 +417,16 @@ function HeaderSection({
               <Badge tone={toneForScore(dataQuality.overall * 100)}>{(dataQuality.overall * 100).toFixed(0)}</Badge>
             </div>
           </div>
+          <a
+            href={`https://tr.tradingview.com/chart/?symbol=${encodeURIComponent(`BIST:${ticker}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Hissenin fiyat grafiğini TradingView'da yeni sekmede açar — teknik analizi orada kendin yapabilirsin."
+            className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-xs font-medium text-foreground hover:bg-surface-hover"
+          >
+            <ExternalLink size={13} />
+            TradingView&apos;da Aç
+          </a>
           <button
             type="button"
             onClick={onRefresh}
