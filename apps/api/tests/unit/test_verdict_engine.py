@@ -80,10 +80,12 @@ def test_single_lens_gives_low_confidence(cfg):
     assert v.confidence == "DUSUK"
 
 
-def test_disagreeing_lenses_give_makul_and_medium_confidence(cfg):
+def test_opposing_lenses_say_so_and_have_low_confidence(cfg):
+    # +1 ve -1: ortalama MAKUL ama hiçbir yöntem "makul" demedi.
     v = compute_verdict(_valuation(history_ratio=0.7, upside=-0.4), _scores(70), 0.9, None, cfg)
     assert v.price == "MAKUL"
-    assert v.confidence == "ORTA"
+    assert v.confidence == "DUSUK"
+    assert "farklı yönleri" in v.headline
 
 
 def test_too_few_peers_skips_peer_lens(cfg):
@@ -113,3 +115,13 @@ def test_unsupported_industry_returns_no_verdict(cfg):
                         unsupported_reason="banka")
     assert v.price is None and v.quality is None and v.signal is None
     assert v.unsupported_reason == "banka"
+
+
+def test_two_of_three_lenses_win_the_vote(cfg):
+    v = compute_verdict(
+        _valuation(history_ratio=0.6, upside=-0.5, pe=4.0), _scores(70), 0.9,
+        PeerMedians(peer_count=3, median_pe=10.0), cfg,
+    )
+    assert v.price == "UCUZ"
+    assert "3 değerleme yönteminden 2 tanesi" in v.headline
+

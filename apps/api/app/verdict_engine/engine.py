@@ -16,7 +16,7 @@ from app.schemas.scoring import ScoreResult
 from app.schemas.valuation import ValuationMetrics
 from app.schemas.verdict import Verdict, VerdictLens
 
-_PRICE_TR = {"UCUZ": "ucuz", "MAKUL": "makul fiyatlı", "PAHALI": "pahalı"}
+_PRICE_TR = {"UCUZ": "ucuz", "MAKUL": "makul", "PAHALI": "pahalı"}
 _QUALITY_TR = {"GUCLU": "Güçlü", "ORTA": "Orta kalitede", "ZAYIF": "Zayıf"}
 
 # DEMO sinyal matrisi: (fiyat, kalite) -> sinyal. Ucuz ama zayıf şirket
@@ -136,6 +136,8 @@ def _headline(price: str | None, quality: str | None, voted: int, agreeing: int)
     if price is None:
         return "Fiyat hakkında hüküm vermek için yeterli değerleme verisi yok."
     quality_part = f"{_QUALITY_TR[quality]} şirket" if quality else "Kalitesi ölçülemeyen şirket"
+    if agreeing == 0:
+        return f"{quality_part}; değerleme yöntemleri farklı yönleri gösteriyor, fiyat için net bir hüküm yok."
     return (
         f"{quality_part}, fiyatı {_PRICE_TR[price]} — "
         f"{voted} değerleme yönteminden {agreeing} tanesi bu yönde."
@@ -197,7 +199,12 @@ def compute_verdict(
         and data_quality_overall >= conf_cfg["high_min_data_quality"]
     ):
         confidence = "YUKSEK"
-    elif not votes or len(votes) < 2 or data_quality_overall < conf_cfg["low_below_data_quality"]:
+    elif (
+        not votes
+        or len(votes) < 2
+        or data_quality_overall < conf_cfg["low_below_data_quality"]
+        or (agreement is not None and agreement < conf_cfg["low_below_agreement"])
+    ):
         confidence = "DUSUK"
     else:
         confidence = "ORTA"
