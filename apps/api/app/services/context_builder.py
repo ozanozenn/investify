@@ -14,6 +14,7 @@ from app.schemas.context import (
 from app.schemas.financial import FinancialHistoryPoint, FinancialMetrics
 from app.schemas.scoring import ScoreResult
 from app.schemas.valuation import ValuationMetrics
+from app.schemas.verdict import Verdict
 
 
 def build_context(
@@ -30,6 +31,7 @@ def build_context(
     sources: list[SourceRef],
     unsupported_reason: str | None = None,
     next_rate_decision_date: dt.date | None = None,
+    verdict: Verdict | None = None,
 ) -> StructuredAnalysisContext:
     """Assembles the ONLY object the LLM layer ever receives (ADR-003).
     Pure: no DB/provider access — everything is passed in already computed.
@@ -49,4 +51,5 @@ def build_context(
         sources=sources,
         unsupported_reason=unsupported_reason,
         next_rate_decision_date=next_rate_decision_date,
+        verdict=verdict,
     )

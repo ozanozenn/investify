@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.company import Company, Industry, Sector, Ticker
 from app.models.snapshots import AnalysisSnapshot
 from app.schemas.peer import PeerCompanyMetric, PeerComparisonResult
+from app.verdict_engine.engine import PeerMedians
 
 
 class CompanyNotFoundError(ValueError):
@@ -70,42 +71,11 @@ async def _primary_ticker_symbol(session: AsyncSession, company: Company) -> str
     return row.symbol if row is not None else company.name
 
 
-async def compute_peer_comparison(session: AsyncSession, ticker: str) -> PeerComparisonResult:
-    """Compare `ticker`'s latest analysis against the median of OTHER
-    already-refreshed companies in the same industry, falling back to the
-    same sector if the industry has no other refreshed peers.
-
-    Raises `CompanyNotFoundError` if the ticker doesn't resolve to a company,
-    and `NoAnalysisSnapshotError` if the subject company has never been
-    refreshed. Both are plain `ValueError` subclasses; the router maps them
-    to 404s. A subject with zero peers is NOT an error — it's returned as a
-    normal 200 with `insufficient_peers=True`, mirroring the engines'
-    "unsupported" pattern (`scoring_engine/engine.py:unsupported_score_result`,
-    `financial_engine/industry_strategy.py`) rather than fabricating a median.
-    """
-    symbol = ticker.upper()
-
-    result = await session.execute(select(Ticker).where(Ticker.symbol == symbol))
-    ticker_row = result.scalars().first()
-    if ticker_row is None:
-        raise CompanyNotFoundError(f"'{symbol}' koduna karşılık gelen bir şirket bulunamadı")
-
-    subject = await session.get(Company, ticker_row.company_id)
-    if subject is None:
-        raise CompanyNotFoundError(f"'{symbol}' koduna karşılık gelen bir şirket bulunamadı")
-
-    subject_snapshot_result = await session.execute(
-        select(AnalysisSnapshot)
-        .where(AnalysisSnapshot.company_id == subject.id)
-        .order_by(AnalysisSnapshot.created_at.desc())
-        .limit(1)
-    )
-    subject_snapshot = subject_snapshot_result.scalar_one_or_none()
-    if subject_snapshot is None:
-        raise NoAnalysisSnapshotError(f"'{symbol}' için henüz bir analiz yok; önce bir refresh çalıştırın")
-
-    this_company = _metric_from_snapshot(symbol, subject.name, subject_snapshot)
-
+async def _find_peer_candidates(
+    session: AsyncSession, subject: Company
+) -> tuple[str, str | None, str | None, list[Company]]:
+    """(peer_group_basis, sector_name, industry_name, candidates): önce aynı
+    endüstri, yoksa aynı sektör; yalnızca en az bir snapshot'ı olan şirketler."""
     subject_industry: Industry | None = None
     if subject.industry_id is not None:
         subject_industry = await session.get(Industry, subject.industry_id)
@@ -160,6 +130,70 @@ async def compute_peer_comparison(session: AsyncSession, ticker: str) -> PeerCom
                     candidate_companies = with_data
                     peer_group_basis = "sector"
 
+    return peer_group_basis, sector_name, industry_name, candidate_companies
+
+
+def _median(values: list[float | None]) -> float | None:
+    present = [v for v in values if v is not None]
+    if not present:
+        return None
+    return statistics.median(present)
+
+
+async def peer_medians_for_company(session: AsyncSession, subject: Company) -> PeerMedians:
+    """Hüküm motoru için sektör medyanları (ADR-011). Konunun kendi snapshot'ı
+    gerekmez — refresh sırasında, snapshot yazılmadan önce çağrılır."""
+    _, _, _, candidates = await _find_peer_candidates(session, subject)
+    latest = await _latest_snapshots_by_company(session, [c.id for c in candidates])
+    metrics = [_metric_from_snapshot("", c.name, latest[c.id]) for c in candidates if c.id in latest]
+    return PeerMedians(
+        peer_count=len(metrics),
+        median_pe=_median([m.pe for m in metrics]),
+        median_ev_ebitda=_median([m.ev_ebitda for m in metrics]),
+        median_pb=_median([m.pb for m in metrics]),
+    )
+
+
+async def compute_peer_comparison(session: AsyncSession, ticker: str) -> PeerComparisonResult:
+    """Compare `ticker`'s latest analysis against the median of OTHER
+    already-refreshed companies in the same industry, falling back to the
+    same sector if the industry has no other refreshed peers.
+
+    Raises `CompanyNotFoundError` if the ticker doesn't resolve to a company,
+    and `NoAnalysisSnapshotError` if the subject company has never been
+    refreshed. Both are plain `ValueError` subclasses; the router maps them
+    to 404s. A subject with zero peers is NOT an error — it's returned as a
+    normal 200 with `insufficient_peers=True`, mirroring the engines'
+    "unsupported" pattern (`scoring_engine/engine.py:unsupported_score_result`,
+    `financial_engine/industry_strategy.py`) rather than fabricating a median.
+    """
+    symbol = ticker.upper()
+
+    result = await session.execute(select(Ticker).where(Ticker.symbol == symbol))
+    ticker_row = result.scalars().first()
+    if ticker_row is None:
+        raise CompanyNotFoundError(f"'{symbol}' koduna karşılık gelen bir şirket bulunamadı")
+
+    subject = await session.get(Company, ticker_row.company_id)
+    if subject is None:
+        raise CompanyNotFoundError(f"'{symbol}' koduna karşılık gelen bir şirket bulunamadı")
+
+    subject_snapshot_result = await session.execute(
+        select(AnalysisSnapshot)
+        .where(AnalysisSnapshot.company_id == subject.id)
+        .order_by(AnalysisSnapshot.created_at.desc())
+        .limit(1)
+    )
+    subject_snapshot = subject_snapshot_result.scalar_one_or_none()
+    if subject_snapshot is None:
+        raise NoAnalysisSnapshotError(f"'{symbol}' için henüz bir analiz yok; önce bir refresh çalıştırın")
+
+    this_company = _metric_from_snapshot(symbol, subject.name, subject_snapshot)
+
+    peer_group_basis, sector_name, industry_name, candidate_companies = await _find_peer_candidates(
+        session, subject
+    )
+
     if not candidate_companies:
         return PeerComparisonResult(
             ticker=symbol,
@@ -187,12 +221,6 @@ async def compute_peer_comparison(session: AsyncSession, ticker: str) -> PeerCom
             continue
         symbol_for_peer = await _primary_ticker_symbol(session, company)
         peers.append(_metric_from_snapshot(symbol_for_peer, company.name, snapshot))
-
-    def _median(values: list[float | None]) -> float | None:
-        present = [v for v in values if v is not None]
-        if not present:
-            return None
-        return statistics.median(present)
 
     median_overall_score = _median([p.overall_score for p in peers])
     median_pe = _median([p.pe for p in peers])

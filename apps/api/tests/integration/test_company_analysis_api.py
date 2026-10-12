@@ -98,3 +98,17 @@ async def test_search_matches_bootstrapped_company_by_name(client):
     resp = await client.get("/api/companies/search", params={"q": "zzqq test"})
     assert resp.status_code == 200
     assert any(r["ticker"] == "ZZQQ" for r in resp.json())
+
+
+@pytest.mark.asyncio
+async def test_refresh_persists_deterministic_verdict(client):
+    body = (await client.post("/api/companies/VRDCT/refresh")).json()
+    verdict = body["verdict"]
+    assert verdict is not None
+    assert verdict["engine_version"] == "v1"
+    assert {lens["key"] for lens in verdict["lenses"]} == {"history", "peers", "dcf"}
+    assert verdict["confidence"] in {"YUKSEK", "ORTA", "DUSUK"}
+
+    # Snapshot'tan okunduğunda aynı hüküm döner (ADR-005: değişmez).
+    cached = (await client.get("/api/companies/VRDCT/analysis")).json()
+    assert cached["verdict"] == verdict

@@ -15,6 +15,7 @@ from app.schemas.context import (
 from app.schemas.financial import FinancialHistoryPoint, FinancialMetrics
 from app.schemas.scoring import ScoreResult
 from app.schemas.valuation import ValuationMetrics
+from app.schemas.verdict import Verdict
 
 
 class CompanyAnalysisResponse(BaseModel):
@@ -32,6 +33,7 @@ class CompanyAnalysisResponse(BaseModel):
     sources: list[SourceRef]
     analysis: dict
     unsupported_reason: str | None = None
+    verdict: Verdict | None = None
     versions: dict[str, str]
     stage_results: dict[str, str] | None = None
 
