@@ -135,5 +135,7 @@ backtesting — roadmap section 44 is explicit this is not a trading bot).
 
 ## Explicit non-goals (forever)
 
-BUY/SELL/HOLD signals, portfolio management, broker integration,
-automatic trading. See `MAIN_ROADMAP.md` section 1.
+Portfolio management, broker integration, automatic trading. See
+`MAIN_ROADMAP.md` section 1. BUY/SELL/HOLD: a deterministic AL/TUT/SAT
+signal exists **as a demo only** (user decision 2026-10-12, ADR-011),
+off with one config flag; the LLM never produces one.

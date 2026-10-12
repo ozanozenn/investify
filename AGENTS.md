@@ -8,7 +8,8 @@ Investify — Borsa İstanbul (BIST) şirketleri için kanıta dayalı, izlenebi
 yatırım araştırma platformu. Akış: gerçek piyasa/finansal/KAP/makro veri →
 deterministik metrik/değerleme/skor → LLM yorumu (asla hesaplama yapmaz) →
 versiyonlu, değişmez analiz anlık görüntüsü (`AnalysisSnapshot`). Tek
-kullanıcılı, BUY/SELL/HOLD sinyali vermez (bkz. `MAIN_ROADMAP.md` madde 1).
+kullanıcılı. AL/TUT/SAT sinyali **yalnızca demo** olarak, deterministik hüküm
+motorundan gelir ve tek ayarla kapanır (ADR-011); LLM asla sinyal vermez.
 
 ## Stack
 FastAPI + SQLAlchemy 2.0 (async) + Alembic + PostgreSQL (`apps/api`) ·
@@ -46,8 +47,7 @@ Docker Compose orkestrasyon · Redis (hafif önbellek, Phase 1 kapsamında).
 <!-- Sadece Claude'un tahmin edemeyeceği, projeye özgü kurallar -->
 - **Tüm kullanıcıya dönük çıktı Türkçe** — UI metinleri, LLM analiz çıktısı,
   hata mesajları. Yeni özellikler ilk taslaktan itibaren Türkçe yazılır,
-  sonradan çevrilmez. (ADR'ler ve geliştirici dokümantasyonu istisna —
-  başlık anahtarları İngilizce kalır, bkz. docs/adr/ konvansiyonu.)
+  sonradan çevrilmez. ADR'ler de Türkçe ve kısa (şablon: `/adr` skill'i).
 - **LLM asla hesaplama yapmaz** (ADR-003) — her sayı deterministik
   motorlardan gelir; context'e girmeden önce insan-okunur Türkçe formatlanır
   (`llm/number_format.py`, `llm/context_formatter.py`); LLM bu biçimi aynen
@@ -89,8 +89,8 @@ Docker Compose orkestrasyon · Redis (hafif önbellek, Phase 1 kapsamında).
 
 ## Dokümantasyon haritası
 - `docs/ARCHITECTURE.md` — sistem mimarisi
-- `docs/adr/ADR-NNN-*.md` — mimari karar kayıtları (3 haneli numara, asla
-  yeniden numaralama — mevcut referansları kırar)
+- `docs/adr/README.md` — mimari karar kayıtları dizini (3 haneli numara,
+  asla yeniden numaralama — kod bu numaralara atıf yapıyor)
 - `docs/ROADMAP.md` — faz durumu · `docs/TECHNICAL_DEBT.md` — bilinen açıklar
 - `docs/handoff/CURRENT.md` — güncel durum / devir notu
 - `docs/AGENT_SETUP.md` — bu kurulumun kapsamı, maliyeti ve geri alma tarifi
