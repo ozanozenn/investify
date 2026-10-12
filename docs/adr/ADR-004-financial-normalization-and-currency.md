@@ -1,41 +1,33 @@
-# ADR-004: Financial statement normalization and currency handling
+# ADR-004: Finansal tablo normalizasyonu ve ölçek
 
-## Status
-Accepted (Phase 1)
+**Durum:** Kabul edildi · 2026-08-17 · gözden geçirildi 2026-10-12 (kodla uyumlu hale getirildi)
 
-## Context
-Different providers/periods label the same concept differently ("Revenue" vs
-"Net Sales" vs "Hasılat"), and values arrive at different scales (TL vs
-thousand TL vs million TL). Section 64/65 of the roadmap require a mapping
-layer and explicit `value/currency/scale` handling.
+## Bağlam
+Aynı kalem farklı kaynaklarda farklı adlarla ("Total Revenue", "Hasılat")
+ve farklı ölçeklerle (TL, bin TL) gelir. "1000 TL ile 1 TL'yi karıştırma"
+hatasını yapısal olarak engellemek istiyoruz.
 
-## Decision
-1. **Canonical line items.** `financial_engine/canonical_fields.py` defines a
-   fixed enum of canonical line items for Phase 1 (Revenue, GrossProfit,
-   EBITDA, EBIT, NetIncome, Cash, TotalAssets, TotalDebt, Equity,
-   OperatingCashFlow, Capex, FreeCashFlow — matching the roadmap's Phase 1
-   minimum field list). Each provider implementation is responsible for
-   mapping its raw field names to this enum in its own adapter
-   (`providers/financial/yfinance_mapping.py`); nothing downstream ever sees
-   a provider-specific field name.
-2. **Storage.** `financial_values` stores one row per
-   `(financial_period_id, canonical_field, value, currency, scale)`. `scale`
-   is an integer power-of-ten multiplier applied to `value` to reach base
-   currency units (e.g. `scale=1` for already-in-TL, `scale=1000` for
-   thousand-TL). All arithmetic in `financial_engine` operates on the
-   scaled (base-unit) value, computed once at read time via a SQLAlchemy
-   hybrid property, so a formula can never accidentally mix scales.
-3. **Currency.** Phase 1 assumes company financial statements are reported
-   in TRY (true for all BIST Phase 1 validation companies). The `currency`
-   column exists and is populated so this is not a silent assumption, but
-   FX-converted multi-currency statement support is explicitly deferred
-   (not needed until a USD-reporting company is onboarded).
-4. **Guard rail.** `financial_engine` raises `ScaleMismatchError` if it is
-   asked to combine two `FinancialValue` rows with different `currency`
-   without an explicit conversion step — there is no implicit coercion.
+## Karar
+- Sabit bir kanonik kalem listesi: `models/enums.py:CanonicalField`
+  (REVENUE, EBITDA, NET_INCOME, EQUITY, TOTAL_DEBT, CASH, CAPEX, ...).
+- Her sağlayıcı kendi alan adlarını bu listeye kendi eşleme dosyasında
+  çevirir (`providers/financial/yfinance_mapping.py`). Aşağı katmanlar
+  sağlayıcıya özgü ad görmez.
+- `financial_values` tablosu her satırda `value`, `currency`, `scale` tutar.
+  Hesaplamalar `FinancialValue.base_value` (= value × scale) üzerinden yapılır.
+- Tüm şirketlerin TRY raporladığı varsayılır; `currency` sütunu bu varsayımı
+  görünür kılmak için doldurulur. Çoklu para birimi desteklenmez.
+- Hesaplamalarda `float` kullanılır, `Decimal` değil (muhasebe hassasiyetinde
+  bir sistem değiliz).
 
-## Consequences
-- Adding a new provider only requires a new mapping file, not changes to
-  the engine or schema.
-- The "1000 TL vs 1 TL" class of bug (section 65) is structurally
-  prevented rather than relying on code review discipline.
+## Alternatifler
+- **Sağlayıcının ham alan adlarıyla çalışmak** — her yeni sağlayıcı motoru
+  değiştirmeye zorlardı.
+- **Farklı para birimi karışınca hata fırlatan koruma** — eski metinde
+  `ScaleMismatchError` olarak anlatılıyordu ama **hiç yazılmadı**. USD
+  raporlayan bir şirket eklenene kadar gerek yok.
+
+## Sonuçlar
+- Yeni sağlayıcı = yeni eşleme dosyası; motor değişmez.
+- Ölçek hatası `base_value` disipliniyle önlenir; para birimi karışımına
+  karşı kodda koruma yok.

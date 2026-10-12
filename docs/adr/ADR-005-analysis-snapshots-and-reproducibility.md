@@ -1,34 +1,29 @@
-# ADR-005: Analysis snapshots as the reproducibility/history backbone
+# ADR-005: Analiz anlık görüntüleri değişmezdir
 
-## Status
-Accepted (Phase 1)
+**Durum:** Kabul edildi · 2026-08-17 · gözden geçirildi 2026-10-12
 
-## Context
-Sections 24/25/78/79 treat historical analysis snapshots as one of the most
-important features of the whole product (thesis tracking, "what changed",
-reproducibility). Phase 1 must lay this foundation even though the
-comparison UI itself is deferred to Phase 2.
+## Bağlam
+"Sistem 17 Ağustos'ta THYAO için ne demişti?" sorusu tek satır okumayla
+cevaplanabilmeli. Sonradan yeniden hesaplamak güncellenmiş veriyle farklı
+sonuç verir; geçmiş kaybolur.
 
-## Decision
-Every `POST /api/companies/{ticker}/refresh` run, on success, writes exactly
-one row to `analysis_snapshots` containing:
-- `ticker`, `created_at`, `as_of`
-- `financial_engine_version`, `scoring_engine_version`,
-  `valuation_engine_version`, `prompt_version`, `llm_model`
-- `context_json` — the exact `StructuredAnalysisContext` sent to the LLM
-- `analysis_json` — the exact validated `LLMAnalysisResult` returned
-- `data_quality_json` — completeness/freshness/warnings at that moment
+## Karar
+- Her başarılı refresh `analysis_snapshots` tablosuna tam bir satır yazar:
+  motor sürümleri, prompt sürümü, LLM modeli, `context_json` (LLM'e giden
+  context'in tamamı, hüküm dahil), `analysis_json` (LLM çıktısı),
+  `data_quality_json`.
+- Satır yazıldıktan sonra **güncellenmez**. Yeni refresh yeni satır demektir.
+- `GET /analysis` son satırı, `GET /analysis/history` listeyi döner. Geçmiş
+  karşılaştırma ve tez takibi (`services/snapshot_diff.py`) bu satırlardan
+  hesaplanır; şema değişikliği gerekmedi.
+- Sonradan eklenen alanlar (ör. `verdict`) şemada opsiyoneldir; eski
+  satırlar okunmaya devam eder.
 
-This row is immutable once written (no update path). `GET
-/api/companies/{ticker}/analysis` returns the latest snapshot;
-`GET /api/companies/{ticker}/analysis/history` (route exists in Phase 1,
-returns the list) enables Phase 2's diff UI without a schema change.
+## Alternatifler
+- **İstek anında yeniden hesaplamak** — ucuz ama geçmişi yeniden üretemez.
+- **Sadece özet skorları saklamak** — "neden böyle dedi" sorusu cevapsız kalır.
 
-## Consequences
-- Reproducing "what did the system say about THYAO on 2026-08-17" is a
-  single row read, not a re-computation — important because re-computation
-  later would use different (updated) financial data and could not
-  reproduce the historical view.
-- Storage cost is small (one JSONB row per refresh) and acceptable for a
-  single-user system with on-demand refresh (no high-frequency polling in
-  Phase 1).
+## Sonuçlar
+- Depolama refresh başına bir JSON satırı; tek kullanıcı için önemsiz.
+- Peer karşılaştırması diğer şirketlerin son snapshot'ını kullandığı için
+  sonuç, o şirketlerin ne zaman yenilendiğine bağlıdır.
