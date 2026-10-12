@@ -40,7 +40,7 @@ def cfg():
 def test_all_lenses_cheap_strong_company_is_al_with_high_confidence(cfg):
     v = compute_verdict(
         _valuation(history_ratio=0.7, upside=0.4, pe=8.0), _scores(72), 0.9,
-        PeerMedians(peer_count=3, median_pe=12.0), cfg,
+        PeerMedians(peer_count=3, median_pe=12.0, pe_count=3), cfg,
     )
     assert v.price == "UCUZ"
     assert v.quality == "GUCLU"
@@ -74,18 +74,52 @@ def test_missing_lenses_are_never_guessed(cfg):
     assert "yeterli değerleme verisi yok" in v.headline
 
 
-def test_single_lens_gives_low_confidence(cfg):
+def test_single_lens_gives_low_confidence_and_no_signal(cfg):
     v = compute_verdict(_valuation(history_ratio=0.7), _scores(70), 0.95, None, cfg)
     assert v.price == "UCUZ"
     assert v.confidence == "DUSUK"
+    assert v.signal is None
 
 
-def test_opposing_lenses_say_so_and_have_low_confidence(cfg):
-    # +1 ve -1: ortalama MAKUL ama hiçbir yöntem "makul" demedi.
-    v = compute_verdict(_valuation(history_ratio=0.7, upside=-0.4), _scores(70), 0.9, None, cfg)
-    assert v.price == "MAKUL"
+def test_opposing_lenses_give_no_price_verdict(cfg):
+    # Ucuz vs pahalı: hiçbir yöntem "makul" demedi, uydurulmaz.
+    v = compute_verdict(_valuation(history_ratio=0.7, upside=-0.4), _scores(30), 0.9, None, cfg)
+    assert v.price is None
+    assert v.signal is None
     assert v.confidence == "DUSUK"
     assert "farklı yönleri" in v.headline
+
+
+def test_one_cheap_two_fair_is_makul_not_al(cfg):
+    # +1, 0, 0: azınlıktaki tek yöntem hükmü belirleyemez.
+    v = compute_verdict(
+        _valuation(history_ratio=0.7, upside=0.0, pe=10.0), _scores(70), 0.9,
+        PeerMedians(peer_count=3, median_pe=10.0, pe_count=3), cfg,
+    )
+    assert v.price == "MAKUL"
+    assert v.signal == "TUT"
+
+
+def test_one_cheap_one_fair_has_no_majority(cfg):
+    v = compute_verdict(_valuation(history_ratio=0.7, upside=0.0), _scores(70), 0.9, None, cfg)
+    assert v.price is None
+    assert v.signal is None
+
+
+def test_peer_multiple_needs_enough_companies_with_that_multiple(cfg):
+    # 3 benzer şirket var ama sadece 1'inin F/K'sı var (diğerleri zararda).
+    v = compute_verdict(_valuation(pe=5.0), _scores(70), 0.9,
+                        PeerMedians(peer_count=3, median_pe=10.0, pe_count=1), cfg)
+    peers = next(lens for lens in v.lenses if lens.key == "peers")
+    assert peers.verdict is None
+
+
+def test_zero_difference_is_worded_as_same_level(cfg):
+    v = compute_verdict(_valuation(history_ratio=1.0, upside=0.001), _scores(70), 0.9, None, cfg)
+    reasons = " ".join(lens.reason for lens in v.lenses)
+    assert "%0" not in reasons
+    assert "medyanıyla aynı seviyede" in reasons
+    assert "güncel fiyatla aynı seviyede" in reasons
 
 
 def test_too_few_peers_skips_peer_lens(cfg):
@@ -97,7 +131,7 @@ def test_too_few_peers_skips_peer_lens(cfg):
 
 
 def test_negative_pe_is_excluded_from_peer_ratio(cfg):
-    v = compute_verdict(_valuation(pe=-4.0), _scores(70), 0.9, PeerMedians(peer_count=3, median_pe=10.0), cfg)
+    v = compute_verdict(_valuation(pe=-4.0), _scores(70), 0.9, PeerMedians(peer_count=3, median_pe=10.0, pe_count=3), cfg)
     peers = next(lens for lens in v.lenses if lens.key == "peers")
     assert peers.verdict is None
 
@@ -120,8 +154,15 @@ def test_unsupported_industry_returns_no_verdict(cfg):
 def test_two_of_three_lenses_win_the_vote(cfg):
     v = compute_verdict(
         _valuation(history_ratio=0.6, upside=-0.5, pe=4.0), _scores(70), 0.9,
-        PeerMedians(peer_count=3, median_pe=10.0), cfg,
+        PeerMedians(peer_count=3, median_pe=10.0, pe_count=3), cfg,
     )
     assert v.price == "UCUZ"
     assert "3 değerleme yönteminden 2 tanesi" in v.headline
 
+
+
+def test_reason_wording_uses_genitive(cfg):
+    v = compute_verdict(_valuation(history_ratio=1.2, upside=0.3), _scores(70), 0.9, None, cfg)
+    reasons = " ".join(lens.reason for lens in v.lenses)
+    assert "son 5 yıllık medyanının %20 üstünde" in reasons
+    assert "güncel fiyatın %30 üstünde" in reasons

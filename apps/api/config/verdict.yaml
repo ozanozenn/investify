@@ -16,11 +16,8 @@ lenses:
     cheap_above_upside: 0.20
     expensive_below_upside: -0.20
 
-# Bakış açılarının oylaması: (+1 ucuz, -1 pahalı, 0 makul) ortalaması.
-# 0.33: üç yöntemden ikisi aynı yönde, biri ters ise (1/3) çoğunluk kazanır.
-price:
-  cheap_at_or_above: 0.33
-  expensive_at_or_below: -0.33
+# Fiyat hükmü: oy veren yöntemlerin yarısından fazlası aynı şeyi demeli
+# (3'te 2, 2'de 2, 1'de 1). Çoğunluk yoksa hüküm yok — ortalama alınmaz.
 
 # Genel skor (0-100) -> kalite.
 quality:
@@ -33,8 +30,8 @@ confidence:
   high_min_agreement: 1.0
   high_min_data_quality: 0.7
   low_below_data_quality: 0.5
-  low_below_agreement: 0.5
 
 # DEMO: AL/SAT/TUT sinyali (kullanıcı kararı 2026-10-12). Kapatmak için false.
+# Güven DÜŞÜK ise sinyal verilmez.
 signal:
   enabled: true

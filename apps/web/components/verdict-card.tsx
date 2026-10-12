@@ -33,10 +33,12 @@ function Cell({
   title,
   help,
   value,
+  emptyText = "Veri yetersiz",
 }: {
   title: string;
   help: string;
   value: { label: string; tone: Tone } | null;
+  emptyText?: string;
 }) {
   return (
     <div className="rounded-lg border border-border bg-surface p-3">
@@ -50,7 +52,7 @@ function Cell({
             {value.label}
           </Badge>
         ) : (
-          <span className="text-sm text-muted">Veri yetersiz</span>
+          <span className="text-sm text-muted">{emptyText}</span>
         )}
       </div>
     </div>
@@ -75,6 +77,7 @@ export function VerdictCard({ verdict }: { verdict: Verdict }) {
             title="Fiyat"
             help="Üç değerleme yönteminin oylaması: şirketin kendi geçmiş çarpanları, sektördeki benzer şirketler ve indirgenmiş nakit akışı (DCF)."
             value={verdict.price ? PRICE[verdict.price] : null}
+            emptyText={verdict.lenses.some((l) => l.verdict) ? "Net değil" : "Veri yetersiz"}
           />
           <Cell
             title="Şirket Kalitesi"
@@ -89,8 +92,9 @@ export function VerdictCard({ verdict }: { verdict: Verdict }) {
           {verdict.signal_is_demo && (
             <Cell
               title="Sinyal (Demo)"
-              help="Fiyat ve kalite hükmünden kurala göre türetilen deneme amaçlı bir sinyaldir. Yatırım tavsiyesi değildir."
+              help="Fiyat ve kalite hükmünden kurala göre türetilen deneme amaçlı bir sinyaldir. Hükmün güvenilirliği düşükse verilmez. Yatırım tavsiyesi değildir."
               value={verdict.signal ? SIGNAL[verdict.signal] : null}
+              emptyText="Verilmedi"
             />
           )}
         </div>

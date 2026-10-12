@@ -146,11 +146,20 @@ async def peer_medians_for_company(session: AsyncSession, subject: Company) -> P
     _, _, _, candidates = await _find_peer_candidates(session, subject)
     latest = await _latest_snapshots_by_company(session, [c.id for c in candidates])
     metrics = [_metric_from_snapshot("", c.name, latest[c.id]) for c in candidates if c.id in latest]
+    def positive(values: list[float | None]) -> list[float]:
+        return [v for v in values if v is not None and v > 0]
+
+    pe = positive([m.pe for m in metrics])
+    ev_ebitda = positive([m.ev_ebitda for m in metrics])
+    pb = positive([m.pb for m in metrics])
     return PeerMedians(
         peer_count=len(metrics),
-        median_pe=_median([m.pe for m in metrics]),
-        median_ev_ebitda=_median([m.ev_ebitda for m in metrics]),
-        median_pb=_median([m.pb for m in metrics]),
+        median_pe=_median(pe),
+        median_ev_ebitda=_median(ev_ebitda),
+        median_pb=_median(pb),
+        pe_count=len(pe),
+        ev_ebitda_count=len(ev_ebitda),
+        pb_count=len(pb),
     )
 
 

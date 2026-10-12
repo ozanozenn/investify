@@ -112,3 +112,18 @@ async def test_refresh_persists_deterministic_verdict(client):
     # Snapshot'tan okunduğunda aynı hüküm döner (ADR-005: değişmez).
     cached = (await client.get("/api/companies/VRDCT/analysis")).json()
     assert cached["verdict"] == verdict
+
+
+@pytest.mark.asyncio
+async def test_verdict_peer_lens_uses_other_refreshed_companies_only(client):
+    # Sahte sağlayıcı tüm şirketleri aynı endüstriye koyar.
+    first = (await client.post("/api/companies/PEERA/refresh")).json()
+    peers_first = next(lens for lens in first["verdict"]["lenses"] if lens["key"] == "peers")
+    assert peers_first["verdict"] is None  # kendisiyle karşılaştırılmaz
+    assert "(0)" in peers_first["reason"]
+
+    await client.post("/api/companies/PEERB/refresh")
+    third = (await client.post("/api/companies/PEERC/refresh")).json()
+    peers_third = next(lens for lens in third["verdict"]["lenses"] if lens["key"] == "peers")
+    assert peers_third["verdict"] is not None
+    assert "2+ benzer şirket" in peers_third["reason"]

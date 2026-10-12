@@ -42,10 +42,22 @@ class PeerMedians:
     median_pe: float | None = None
     median_ev_ebitda: float | None = None
     median_pb: float | None = None
+    # Her çarpanın medyanına kaç şirket katkı verdi (zarar edenin F/K'sı yok).
+    pe_count: int = 0
+    ev_ebitda_count: int = 0
+    pb_count: int = 0
 
 
 def _pct(value: float) -> str:
     return f"%{abs(value) * 100:.0f}".replace(".", ",")
+
+
+def _vs(diff: float, of: str, with_: str) -> str:
+    """"medyanının %12 üstünde" / "medyanıyla aynı seviyede" — %0 yazmaz.
+    `of`: tamlayan hali (medyanının), `with_`: birliktelik hali (medyanıyla)."""
+    if round(abs(diff) * 100) == 0:
+        return f"{with_} aynı seviyede"
+    return f"{of} {_pct(diff)} {'üstünde' if diff > 0 else 'altında'}"
 
 
 def _ratio_verdict(ratio: float, cheap_below: float, expensive_above: float) -> str:
@@ -71,12 +83,8 @@ def _history_lens(valuation: ValuationMetrics, cfg: dict) -> VerdictLens:
         return VerdictLens(key="history", label=label, verdict=None, value=None,
                            reason="Tarihsel çarpan verisi yok.")
     verdict = _ratio_verdict(ratio, cfg["cheap_below"], cfg["expensive_above"])
-    direction = "altında" if ratio < 1 else "üstünde"
-    reason = (
-        f"Çarpanları son {valuation.history_years_used} yıllık medyanının {_pct(ratio - 1)} {direction}."
-        if abs(ratio - 1) >= 0.005
-        else f"Çarpanları son {valuation.history_years_used} yıllık medyanıyla aynı seviyede."
-    )
+    years = valuation.history_years_used
+    reason = f"Çarpanları {_vs(ratio - 1, f'son {years} yıllık medyanının', f'son {years} yıllık medyanıyla')}."
     return VerdictLens(key="history", label=label, verdict=verdict, value=ratio, reason=reason)
 
 
@@ -87,19 +95,24 @@ def _peers_lens(valuation: ValuationMetrics, peers: PeerMedians | None, cfg: dic
         return VerdictLens(key="peers", label=label, verdict=None, value=None,
                            reason=f"Karşılaştırılacak yeterli benzer şirket yok ({count}).")
     ratios: list[float | None] = []
-    for own, median in ((valuation.pe, peers.median_pe), (valuation.ev_ebitda, peers.median_ev_ebitda),
-                        (valuation.pb, peers.median_pb)):
-        if own is not None and median is not None and own > 0 and median > 0:
+    used_counts: list[int] = []
+    for own, median, count in (
+        (valuation.pe, peers.median_pe, peers.pe_count),
+        (valuation.ev_ebitda, peers.median_ev_ebitda, peers.ev_ebitda_count),
+        (valuation.pb, peers.median_pb, peers.pb_count),
+    ):
+        # Her çarpan kendi başına yeterli sayıda şirketle karşılaştırılmalı.
+        if own is not None and median is not None and own > 0 and median > 0 and count >= cfg["min_peer_count"]:
             ratios.append(own / median)
+            used_counts.append(count)
     ratio = _mean_positive(ratios)
     if ratio is None:
         return VerdictLens(key="peers", label=label, verdict=None, value=None,
                            reason="Benzer şirketlerle karşılaştırılabilir çarpan yok.")
     verdict = _ratio_verdict(ratio, cfg["cheap_below"], cfg["expensive_above"])
-    direction = "altında" if ratio < 1 else "üstünde"
     return VerdictLens(
         key="peers", label=label, verdict=verdict, value=ratio,
-        reason=f"Çarpanları {peers.peer_count} benzer şirketin medyanının {_pct(ratio - 1)} {direction}.",
+        reason=f"Çarpanları {min(used_counts)}+ benzer şirketin {_vs(ratio - 1, 'medyanının', 'medyanıyla')}.",
     )
 
 
@@ -115,10 +128,9 @@ def _dcf_lens(valuation: ValuationMetrics, cfg: dict) -> VerdictLens:
         verdict = "PAHALI"
     else:
         verdict = "MAKUL"
-    direction = "üstünde" if upside > 0 else "altında"
     return VerdictLens(
         key="dcf", label=label, verdict=verdict, value=upside,
-        reason=f"Baz senaryo içsel değeri güncel fiyatın {_pct(upside)} {direction}.",
+        reason=f"Baz senaryo içsel değeri {_vs(upside, 'güncel fiyatın', 'güncel fiyatla')}.",
     )
 
 
@@ -133,10 +145,10 @@ def _quality(overall: float | None, cfg: dict) -> str | None:
 
 
 def _headline(price: str | None, quality: str | None, voted: int, agreeing: int) -> str:
-    if price is None:
-        return "Fiyat hakkında hüküm vermek için yeterli değerleme verisi yok."
     quality_part = f"{_QUALITY_TR[quality]} şirket" if quality else "Kalitesi ölçülemeyen şirket"
-    if agreeing == 0:
+    if voted == 0:
+        return "Fiyat hakkında hüküm vermek için yeterli değerleme verisi yok."
+    if price is None:
         return f"{quality_part}; değerleme yöntemleri farklı yönleri gösteriyor, fiyat için net bir hüküm yok."
     return (
         f"{quality_part}, fiyatı {_PRICE_TR[price]} — "
@@ -170,21 +182,17 @@ def compute_verdict(
         _dcf_lens(valuation, lens_cfg["dcf"]),
     ]
     missing = [f"verdict_lens_{lens.key}" for lens in lenses if lens.verdict is None]
-    votes = [{"UCUZ": 1, "MAKUL": 0, "PAHALI": -1}[lens.verdict] for lens in lenses if lens.verdict]
+    votes = [lens.verdict for lens in lenses if lens.verdict]
 
+    # Gerçek çoğunluk: yarıdan fazlası aynı şeyi demeli. Ortalama alınmaz —
+    # aksi halde azınlıktaki tek bir yöntem hükmü (ve sinyali) belirleyebilir.
     price: str | None = None
-    agreement: float | None = None
     agreeing = 0
-    if votes:
-        mean = sum(votes) / len(votes)
-        if mean >= config["price"]["cheap_at_or_above"]:
-            price = "UCUZ"
-        elif mean <= config["price"]["expensive_at_or_below"]:
-            price = "PAHALI"
-        else:
-            price = "MAKUL"
-        agreeing = sum(1 for lens in lenses if lens.verdict == price)
-        agreement = agreeing / len(votes)
+    for label in ("UCUZ", "MAKUL", "PAHALI"):
+        count = votes.count(label)
+        if count * 2 > len(votes):
+            price, agreeing = label, count
+    agreement = agreeing / len(votes) if votes else None
 
     overall = scores.overall if scores.unsupported_reason is None else None
     quality = _quality(overall, config["quality"])
@@ -199,17 +207,16 @@ def compute_verdict(
         and data_quality_overall >= conf_cfg["high_min_data_quality"]
     ):
         confidence = "YUKSEK"
-    elif (
-        not votes
-        or len(votes) < 2
-        or data_quality_overall < conf_cfg["low_below_data_quality"]
-        or (agreement is not None and agreement < conf_cfg["low_below_agreement"])
-    ):
+    elif price is None or len(votes) < 2 or data_quality_overall < conf_cfg["low_below_data_quality"]:
         confidence = "DUSUK"
     else:
         confidence = "ORTA"
 
-    signal = _SIGNAL_MATRIX.get((price, quality)) if signal_enabled and price and quality else None
+    signal = (
+        _SIGNAL_MATRIX.get((price, quality))
+        if signal_enabled and price and quality and confidence != "DUSUK"
+        else None
+    )
 
     return Verdict(
         price=price,

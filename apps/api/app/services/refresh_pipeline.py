@@ -281,7 +281,12 @@ async def run_refresh(
 
     data_quality = compute_data_quality(metrics, stage_results, market_available=quote is not None)
 
-    peer_medians = None if unsupported_reason else await peer_medians_for_company(session, company)
+    peer_medians = None
+    if not unsupported_reason:
+        try:
+            peer_medians = await peer_medians_for_company(session, company)
+        except Exception as exc:  # hüküm sektör yöntemi olmadan devam eder
+            logger.warning("peer_medians_failed", extra={"ticker": ticker, "error": str(exc)})
     verdict = compute_verdict(
         valuation=valuation,
         scores=scores,
