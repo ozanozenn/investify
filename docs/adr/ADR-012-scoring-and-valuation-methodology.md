@@ -1,6 +1,6 @@
 # ADR-012: Skorlama ve değerleme yöntemi
 
-**Durum:** Kabul edildi · 2026-08-17 (skor), 2026-09-17 (DCF) · ilk kez yazıldı 2026-10-12
+**Durum:** Kabul edildi · 2026-08-17 (skor), 2026-09-17 (DCF) · ilk kez yazıldı 2026-10-12 · bankalar için değiştirildi: ADR-014
 
 ## Bağlam
 Skor ve değerleme ürünün çekirdeği ama hangi kararla böyle kurulduğu hiçbir
@@ -19,9 +19,11 @@ ADR'de yoktu. Eşikleri kod değiştirmeden ayarlayabilmek istiyoruz.
   Varsayımlar şirketin geçmişinden türetilir; türetilemezse yaml'daki
   varsayılan kullanılır ve `missing_fields`'e yazılır. Kullanıcı varsayımları
   ayrı uçtan değiştirebilir.
-- **Desteklenmeyen sektörler**: bankalar, sigorta ve GYO
-  (`Company.is_financial_industry`) genel motora sokulmaz; yanlış skor yerine
-  "desteklenmiyor" gösterilir (`financial_engine/industry_strategy.py`).
+- **Desteklenmeyen sektörler**: sigorta ve GYO (`Company.is_financial_industry`,
+  banka olmayanlar) genel motora sokulmaz; yanlış skor yerine "desteklenmiyor"
+  gösterilir (`financial_engine/industry_strategy.py`). Bankalar genel motora
+  da sokulmaz; ayrı banka motoru ve `config/bank_scoring.yaml` ile analiz
+  edilir, DCF uygulanmaz (ADR-014).
 - Formül değişirse motor sürümü (`*_engine_version`) atlanır; sadece eşik
   değişirse atlanmaz.
 
@@ -36,5 +38,5 @@ ADR'de yoktu. Eşikleri kod değiştirmeden ayarlayabilmek istiyoruz.
   işaretli).
 - Ağır borçlu şirketlerde DCF ayı senaryosu negatif hisse değeri verebilir;
   bu bir hata değil, modelin sonucu.
-- BIST piyasa değerinin büyük kısmı bankalar; banka motoru (Phase 3) en
-  değerli eksik.
+- BIST piyasa değerinin büyük kısmı bankalar; banka motoru ADR-014 ile
+  eklendi. Sigorta ve GYO motoru hâlâ eksik.
