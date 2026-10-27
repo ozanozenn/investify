@@ -12,6 +12,7 @@ import { NewsPanel } from "@/components/news-panel";
 import { OutlookCard } from "@/components/outlook-card";
 import { PeerComparisonPanel } from "@/components/peer-comparison-panel";
 import { VerdictCard } from "@/components/verdict-card";
+import { WatchlistButton } from "@/components/watchlist-button";
 import { Badge, toneForScore } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
@@ -426,6 +427,7 @@ function HeaderSection({
               <Badge tone={toneForScore(dataQuality.overall * 100)}>{(dataQuality.overall * 100).toFixed(0)}</Badge>
             </div>
           </div>
+          <WatchlistButton ticker={ticker} />
           <a
             href={`https://tr.tradingview.com/chart/?symbol=${encodeURIComponent(`BIST:${ticker}`)}`}
             target="_blank"
