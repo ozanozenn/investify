@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 
 from app.llm.number_format import extract_number_candidates
+from app.llm.verdict_formatter import verdict_text_fields
 from app.schemas.context import StructuredAnalysisContext
 from app.schemas.llm_analysis import LLMAnalysisResult
 
@@ -59,15 +60,26 @@ def _collect_context_numbers(context: StructuredAnalysisContext) -> list[float]:
             for v in obj:
                 walk(v)
 
-    # Hüküm (ADR-011) LLM prompt'una girmiyor; onun sayıları LLM'i "doğrulamamalı".
+    # Hüküm (ADR-011) v4'ten beri prompt'ta, ama ham oranları (`lens.value`,
+    # `agreement`) değil, yalnızca Türkçe metinleri gidiyor
+    # (`verdict_formatter.py`). O yüzden hükmün sayısal alanları değil,
+    # LLM'in gerçekten gördüğü başlık/gerekçe metinlerindeki sayılar
+    # "context'te var" sayılır (ör. "medyanının %12 üstünde", "3 değerleme
+    # yönteminden 2 tanesi").
     walk(context.model_dump(mode="json", exclude={"verdict"}))
+    if context.verdict is not None:
+        for text in verdict_text_fields(context.verdict):
+            for _literal, candidates in extract_number_candidates(text):
+                numbers.extend(candidates)
     return numbers
 
 
 def _text_fields(result: LLMAnalysisResult) -> list[str]:
-    texts = [result.executive_summary]
+    # company-analysis-v4 şekli: ufuk başına tek `rationale`, ayrıca
+    # `what_matters_now`. Her serbest metin alanı kontrol edilir.
+    texts = [result.executive_summary, *result.what_matters_now]
     for horizon in (result.short_term, result.medium_term, result.long_term):
-        texts += horizon.drivers + horizon.risks + horizon.catalysts
+        texts.append(horizon.rationale)
     texts += result.bull_case + result.bear_case + result.key_risks
     texts += result.key_catalysts + result.thesis_breakers + result.what_to_watch
     return texts
