@@ -7,8 +7,17 @@ import { Card, CardBody } from "@/components/ui/card";
 import { login } from "@/lib/auth";
 
 // Yalnızca aynı site içindeki yollara dön (açık yönlendirmeyi önler).
+// Sadece önek kontrolü yetmez: tarayıcı "/\\evil.example"'ı "//evil.example"
+// gibi yorumlar. URL'yi çözüp kökenin aynı kaldığını doğrula.
 function safeNext(next: string | null): string {
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  if (!next) return "/";
+  try {
+    const url = new URL(next, window.location.origin);
+    if (url.origin !== window.location.origin) return "/";
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return "/";
+  }
 }
 
 function LoginForm() {
