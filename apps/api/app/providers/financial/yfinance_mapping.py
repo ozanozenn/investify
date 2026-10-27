@@ -32,6 +32,13 @@ BALANCE_SHEET_MAP: dict[CanonicalField, list[str]] = {
         "Common Stock Equity",
         "Total Equity Gross Minority Interest",
     ],
+    # Kalite bayrakları (ADR-016). Etiketler yfinance 0.2.66 `const.py`
+    # fundamentals_keys["balance-sheet"] ("AccountsReceivable", "Receivables",
+    # "Inventory") + `camel2title` ile doğrulandı. Önce ticari alacak, yoksa
+    # toplam alacak — aynı şirkette yıllar arasında etiket karışabilir, bu
+    # bilinen bir yaklaşıklıktır.
+    CanonicalField.RECEIVABLES: ["Accounts Receivable", "Receivables"],
+    CanonicalField.INVENTORY: ["Inventory"],
 }
 
 CASH_FLOW_MAP: dict[CanonicalField, list[str]] = {

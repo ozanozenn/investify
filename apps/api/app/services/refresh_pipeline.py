@@ -46,6 +46,7 @@ from app.services.context_builder import build_context
 from app.services.data_quality import compute_data_quality
 from app.services.peer_comparison import peer_medians_for_company
 from app.services.provider_bundle import ProviderBundle
+from app.services.quality_analysis import compute_quality_analysis
 from app.valuation_engine.dcf import compute_dcf
 from app.valuation_engine.engine import compute_valuation
 from app.verdict_engine.engine import compute_verdict
@@ -334,6 +335,10 @@ async def run_refresh(
         unsupported_reason=unsupported_reason,
         next_rate_decision_date=_next_rate_decision_date(),
         verdict=verdict,
+    )
+    # Kalite bayrakları + reel büyüme (ADR-016) — LLM'den önce context'e girer.
+    context.quality_flags, context.real_growth = compute_quality_analysis(
+        annual_period_data, macro_points, unsupported_reason
     )
 
     try:

@@ -21,6 +21,12 @@ latest period, and this feeds `data_quality.completeness`
 | EBITDA Growth YoY | same shape as Revenue Growth YoY, on EBITDA | |
 | Net Income Growth YoY | same shape, on Net Income | |
 | Growth Consistency | fraction of the last ≤3 YoY revenue growth rates that are positive | `None` if none computable |
+| Real Growth (Revenue, Net Income) — ADR-016 | `(1 + nominal YoY growth) / (1 + CPI YoY) − 1` (`formulas.real_growth`, `real_growth.py`) | Approximation: latest published CPI YoY, not the fiscal year's own inflation. `None` (+ `missing_fields`) if CPI is mock (`cpi_yoy_mock`), missing, more than `max_cpi_gap_months` from fiscal year end (`cpi_period_mismatch`), or prior value ≤ 0 |
+
+Rule-based quality flags (revenue vs. cash flow, accruals, margin trend,
+debt vs. EBITDA, FCF streak, equity, receivables/inventory vs. revenue)
+live in `financial_engine/quality_flags.py` with thresholds in
+`config/quality_flags.yaml` — see ADR-016.
 
 ## Profitability
 

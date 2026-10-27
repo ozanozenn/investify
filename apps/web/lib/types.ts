@@ -172,6 +172,9 @@ export interface CompanyAnalysisResponse {
   analysis: LLMAnalysis;
   unsupported_reason: string | null;
   verdict: Verdict | null;
+  // ADR-016 öncesi snapshot'larda yok.
+  quality_flags?: QualityFlagsResult | null;
+  real_growth?: RealGrowth | null;
   versions: Record<string, string>;
   stage_results: Record<string, string> | null;
 }
@@ -221,4 +224,52 @@ export interface ValuationHistoryLabels {
   pe_vs_history_diff: number | null;
   pb_vs_history_diff: number | null;
   ev_ebitda_vs_history_diff: number | null;
+}
+
+// --- Kalite bayrakları ve reel büyüme (ADR-016) ---
+
+export type QualitySeverity = "UYARI" | "DIKKAT" | "OLUMLU";
+
+export interface QualityFlagValue {
+  key: string;
+  label: string;
+  value: number;
+  /** "ratio": 0-1 ölçekli oran, "currency": mutlak TL tutarı. */
+  unit: "ratio" | "currency";
+}
+
+export interface QualityFlag {
+  key: string;
+  severity: QualitySeverity;
+  title: string;
+  detail: string;
+  values: QualityFlagValue[];
+}
+
+export interface UnevaluatedQualityCheck {
+  key: string;
+  name: string;
+  reason: string;
+  missing_fields: string[];
+}
+
+export interface QualityFlagsResult {
+  as_of_period: string | null;
+  engine_version: string;
+  flags: QualityFlag[];
+  passed_checks: string[];
+  not_evaluated: UnevaluatedQualityCheck[];
+  missing_fields: string[];
+}
+
+export interface RealGrowth {
+  as_of_period: string | null;
+  /** 0-1 ölçeğinde (0,335 = %33,5). */
+  cpi_yoy: number | null;
+  cpi_observation_date: string | null;
+  revenue_growth_nominal: number | null;
+  revenue_growth_real: number | null;
+  net_income_growth_nominal: number | null;
+  net_income_growth_real: number | null;
+  missing_fields: string[];
 }

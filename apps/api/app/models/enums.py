@@ -20,6 +20,8 @@ class CanonicalField(str, enum.Enum):
     TOTAL_ASSETS = "TOTAL_ASSETS"
     TOTAL_DEBT = "TOTAL_DEBT"
     EQUITY = "EQUITY"
+    RECEIVABLES = "RECEIVABLES"  # kalite bayrakları (ADR-016)
+    INVENTORY = "INVENTORY"  # kalite bayrakları (ADR-016)
     # Cash flow
     OPERATING_CASH_FLOW = "OPERATING_CASH_FLOW"
     CAPEX = "CAPEX"
