@@ -7,9 +7,25 @@ Deliberately not exhaustive (~60 large/liquid BIST tickers); any ticker
 typed exactly (e.g. a smaller-cap symbol not listed here) still resolves
 fine through `/companies/{ticker}` because that path bootstraps via the
 live provider regardless of whether it appears in this index.
+
+Full BIST list (ADR-015): when `bist_companies.json` (generated from KAP by
+`scripts/import_bist_companies.py`, with source and date in its metadata)
+sits next to this module, its ~500+ companies are merged in. The curated
+names below win for tickers present in both; without the file, search uses
+the static index alone, exactly as before.
 """
 
 from __future__ import annotations
+
+import json
+from functools import lru_cache
+from pathlib import Path
+
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
+BIST_COMPANIES_PATH = Path(__file__).with_name("bist_companies.json")
 
 TICKER_INDEX: dict[str, str] = {
     "THYAO": "Türk Hava Yolları A.O.",
@@ -76,13 +92,56 @@ TICKER_INDEX: dict[str, str] = {
 }
 
 
-def search_tickers(query: str, limit: int = 10) -> list[dict]:
-    q = query.strip().upper()
+_FOLD = str.maketrans(
+    {"İ": "I", "ı": "I", "i": "I", "Ş": "S", "ş": "S", "Ğ": "G", "ğ": "G",
+     "Ü": "U", "ü": "U", "Ö": "O", "ö": "O", "Ç": "C", "ç": "C"}
+)
+
+
+def _fold(text: str) -> str:
+    """Turkish-aware upper case so "istanbul" matches KAP's "İSTANBUL" and
+    "turk" matches "Türk"."""
+    return text.translate(_FOLD).upper()
+
+
+def load_company_list(path: Path) -> dict[str, str]:
+    """{ticker: name} from a `bist_companies.json` document; {} when the file
+    is absent or unusable (never fatal — search falls back to the static index)."""
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    except (OSError, ValueError) as exc:
+        logger.warning("bist_companies_unreadable", extra={"path": str(path), "error": str(exc)})
+        return {}
+    companies = document.get("companies") if isinstance(document, dict) else None
+    if not isinstance(companies, list):
+        logger.warning("bist_companies_invalid", extra={"path": str(path)})
+        return {}
+    out: dict[str, str] = {}
+    for company in companies:
+        if not isinstance(company, dict):
+            continue
+        ticker, name = company.get("ticker"), company.get("name")
+        if isinstance(ticker, str) and isinstance(name, str) and ticker.strip() and name.strip():
+            out.setdefault(ticker.strip().upper(), " ".join(name.split()))
+    return out
+
+
+@lru_cache(maxsize=1)
+def get_ticker_index() -> dict[str, str]:
+    """Static curated index merged over the generated full BIST list."""
+    merged = load_company_list(BIST_COMPANIES_PATH)
+    merged.update(TICKER_INDEX)
+    return merged
+
+
+def search_tickers(query: str, limit: int = 10, index: dict[str, str] | None = None) -> list[dict]:
+    q = _fold(query.strip())
     if not q:
         return []
-    starts_with = [(t, n) for t, n in TICKER_INDEX.items() if t.startswith(q)]
-    contains = [
-        (t, n) for t, n in TICKER_INDEX.items() if q not in [s for s, _ in starts_with] and (q in t or q in n.upper())
-    ]
-    ordered = starts_with + [pair for pair in contains if pair not in starts_with]
-    return [{"ticker": t, "name": n} for t, n in ordered[:limit]]
+    entries = (index if index is not None else get_ticker_index()).items()
+    starts_with = [(t, n) for t, n in entries if t.startswith(q)]
+    prefix_tickers = {t for t, _ in starts_with}
+    contains = [(t, n) for t, n in entries if t not in prefix_tickers and (q in t or q in _fold(n))]
+    return [{"ticker": t, "name": n} for t, n in (starts_with + contains)[:limit]]

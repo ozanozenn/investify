@@ -47,6 +47,7 @@ from app.services.data_quality import compute_data_quality
 from app.services.llm_analysis import analyze_with_hallucination_retry
 from app.services.bank_analysis import analyze_bank
 from app.services.data_quality import compute_bank_data_quality
+from app.services.financial_sources import financial_source_warnings
 from app.services.peer_comparison import peer_medians_for_company
 from app.services.provider_bundle import ProviderBundle
 from app.services.quality_analysis import compute_quality_analysis
@@ -309,6 +310,7 @@ async def run_refresh(
     data_quality = compute_data_quality(metrics, stage_results, market_available=quote is not None)
     if bank_metrics is not None:
         data_quality = compute_bank_data_quality(bank_metrics, stage_results, market_available=quote is not None)
+    data_quality.warnings.extend(financial_source_warnings(raw_periods))  # ADR-015
 
     peer_medians = None
     if not unsupported_reason:
