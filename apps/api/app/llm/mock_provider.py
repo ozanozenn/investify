@@ -34,8 +34,13 @@ class MockLLMProvider(LLMProvider):
     is_mock = True
 
     async def analyze_company(
-        self, context: StructuredAnalysisContext, prompt_version: str
+        self,
+        context: StructuredAnalysisContext,
+        prompt_version: str,
+        extra_instructions: str | None = None,
     ) -> LLMAnalysisResult:
+        # `extra_instructions` (halüsinasyon düzeltme notu) yok sayılır:
+        # mock gerçek bir model çağırmaz, çıktısı zaten deterministik.
         if context.unsupported_reason:
             neutral = HorizonOutlook(
                 outlook="NEUTRAL",

@@ -24,7 +24,6 @@ from app.financial_engine import formulas
 from app.financial_engine.engine import compute_financial_metrics
 from app.financial_engine.industry_strategy import UNSUPPORTED_INDUSTRY_MESSAGE, is_generic_engine_supported
 from app.llm.base import LLMProviderError
-from app.llm.hallucination_guard import find_unsupported_numbers
 from app.models.data_source import DataFetchLog
 from app.models.enums import FetchStatus
 from app.providers.base import Candle, ProviderUnavailableError, Quote, RawDisclosure, RawFinancialPeriod
@@ -44,6 +43,7 @@ from app.services import persistence
 from app.services.company_bootstrap import get_or_create_company
 from app.services.context_builder import build_context
 from app.services.data_quality import compute_data_quality
+from app.services.llm_analysis import analyze_with_hallucination_retry
 from app.services.peer_comparison import peer_medians_for_company
 from app.services.provider_bundle import ProviderBundle
 from app.valuation_engine.dcf import compute_dcf
@@ -331,18 +331,18 @@ async def run_refresh(
     )
 
     try:
-        llm_result = await providers.llm.analyze_company(context, settings.llm_prompt_version)
+        # Bayraklı sayı varsa bir kez düzeltme denemesi yapar (ADR-003).
+        guarded = await analyze_with_hallucination_retry(providers.llm, context, settings.llm_prompt_version)
     except LLMProviderError as exc:
         logger.error("llm_stage_failed", extra={"ticker": ticker, "error": str(exc)})
         raise
 
-    flagged_numbers = find_unsupported_numbers(context, llm_result)
-    analysis_dict = llm_result.model_dump(mode="json")
+    analysis_dict = guarded.result.model_dump(mode="json")
     analysis_dict["_meta"] = {
         "llm_model": providers.llm.model,
         "llm_is_mocked": providers.llm.is_mock,
         "prompt_version": settings.llm_prompt_version,
-        "hallucination_flags": flagged_numbers,
+        **guarded.meta(),
     }
 
     await persistence.save_analysis_snapshot(

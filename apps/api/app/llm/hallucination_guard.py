@@ -5,6 +5,11 @@ from the LLM's free-text fields and flags any that do not appear (within a
 small relative tolerance, since the LLM may round) among the numeric leaves
 of the context that was actually sent to it. Flags are attached to the
 analysis result's metadata for the UI/logs; nothing is silently dropped.
+
+Since company-analysis-v4 a non-empty flag list triggers exactly one
+corrective retry (`services/llm_analysis.py`, using
+`build_correction_instructions`); the guard itself stays advisory and
+never blocks persisting an analysis.
 """
 
 from __future__ import annotations
@@ -85,6 +90,45 @@ def _text_fields(result: LLMAnalysisResult) -> list[str]:
     return texts
 
 
+def _flag(literal: str, text: str) -> str:
+    return f"unverified number '{literal}' in: {text[:120]}"
+
+
+# `_flag`'in tersi — biçim ile ayrıştırıcı yan yana dursun ki biri
+# değişip öbürü unutulmasın (`number_format.py` ile aynı ilke). Frontend
+# (`apps/web/lib/analysis.ts`) da aynı kalıpla sayıyı okur.
+_FLAG_LITERAL_RE = re.compile(r"^unverified number '([^']*)'")
+
+_MAX_LITERALS_IN_CORRECTION = 10
+
+
+def flagged_literals(flags: list[str]) -> list[str]:
+    """Bayraklardaki sayı metinleri, sırası korunarak ve tekrarsız."""
+    out: list[str] = []
+    for flag in flags:
+        match = _FLAG_LITERAL_RE.match(flag)
+        literal = match.group(1) if match else None
+        if literal and literal not in out:
+            out.append(literal)
+    return out
+
+
+def build_correction_instructions(flags: list[str]) -> str:
+    """Tek seferlik düzeltme denemesinde prompt'un sonuna eklenen kısa not
+    (ADR-003). Sadece hangi sayıların desteksiz olduğunu söyler; doğru
+    değeri LLM'e biz söylemeyiz — context zaten elinde."""
+    literals = flagged_literals(flags)[:_MAX_LITERALS_IN_CORRECTION]
+    listed = ", ".join(f"«{lit}»" for lit in literals)
+    return (
+        "## Düzeltme talebi\n\n"
+        f"Önceki yanıtında context'te karşılığı bulunmayan şu sayılar vardı: {listed}.\n"
+        "Yanıtı aynı şemayla baştan üret. Bu kez:\n"
+        "- Yalnızca context'te yazan rakamları, context'teki biçimiyle (işaret ve birim dahil) aynen kullan.\n"
+        "- Kendi hesabını yapma: rakamları toplama, çıkarma, oranlama, yuvarlama.\n"
+        "- Bir rakamdan emin değilsen sayı vermeden sözle anlat."
+    )
+
+
 def find_unsupported_numbers(context: StructuredAnalysisContext, result: LLMAnalysisResult) -> list[str]:
     context_numbers = _collect_context_numbers(context)
     flagged: list[str] = []
@@ -104,5 +148,5 @@ def find_unsupported_numbers(context: StructuredAnalysisContext, result: LLMAnal
                 for ctx_val in context_numbers
             )
             if not supported:
-                flagged.append(f"unverified number '{literal}' in: {text[:120]}")
+                flagged.append(_flag(literal, text))
     return flagged

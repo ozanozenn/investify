@@ -76,6 +76,15 @@ async def test_valid_json_response_parses_into_llm_analysis_result():
 
 
 @pytest.mark.asyncio
+async def test_extra_instructions_are_appended_to_the_prompt():
+    provider = _provider_with_response(_V4_JSON)
+    await provider.analyze_company(_context(), "company-analysis-v4", extra_instructions="## Düzeltme talebi\nX")
+    sent_prompt = provider._client.aio.models.generate_content.call_args.kwargs["contents"]
+    assert sent_prompt.rstrip().endswith("## Düzeltme talebi\nX")
+    assert '"ticker": "TEST"' in sent_prompt  # context still embedded before it
+
+
+@pytest.mark.asyncio
 async def test_pre_v4_shaped_response_is_rejected():
     # v1-v3 horizon shape (confidence/drivers, no rationale) no longer
     # matches the output contract — must fail loudly, not half-parse.

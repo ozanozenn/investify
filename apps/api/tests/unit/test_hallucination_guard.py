@@ -7,7 +7,11 @@ from __future__ import annotations
 
 import datetime as dt
 
-from app.llm.hallucination_guard import find_unsupported_numbers
+from app.llm.hallucination_guard import (
+    build_correction_instructions,
+    find_unsupported_numbers,
+    flagged_literals,
+)
 from app.schemas.context import (
     CompanyContext,
     DataQuality,
@@ -199,3 +203,16 @@ def test_raw_verdict_ratios_not_sent_to_llm_are_not_supported():
     context.verdict = _verdict()
     flags = find_unsupported_numbers(context, _result("Çarpan oranı 1,12 kat."))
     assert len(flags) == 1
+
+
+def test_correction_instructions_list_each_flagged_literal_once():
+    flags = [
+        "unverified number '42.7' in: Net kâr marjı 42.7 seviyesinde.",
+        "unverified number '42.7' in: Yine 42.7.",
+        "unverified number '%88,8' in: Büyüme.",
+    ]
+    assert flagged_literals(flags) == ["42.7", "%88,8"]
+    text = build_correction_instructions(flags)
+    assert "«42.7», «%88,8»" in text
+    assert text.count("42.7") == 1
+    assert "context" in text

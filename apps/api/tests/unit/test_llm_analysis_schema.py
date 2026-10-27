@@ -89,7 +89,7 @@ async def test_mock_explains_verdict_in_v4_shape():
         ],
         agreement=1.0, overall_score=57.5, engine_version="v1",
     )
-    result = await MockLLMProvider().analyze_company(context, "company-analysis-v4")
+    result = await MockLLMProvider().analyze_company(context, "company-analysis-v4", extra_instructions="yok sayılır")
     assert context.verdict.headline in result.executive_summary
     # Only lenses that actually voted are echoed.
     assert result.what_matters_now == [
