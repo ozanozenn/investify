@@ -54,7 +54,7 @@ export interface FinancialHistoryPoint {
   free_cash_flow: number | null;
 }
 
-export interface ValuationMetrics {
+export interface ValuationMetrics extends ValuationHistoryLabels {
   pe: number | null;
   pb: number | null;
   ev_ebitda: number | null;
@@ -209,4 +209,16 @@ export interface Verdict {
   engine_version: string;
   missing_fields: string[];
   unsupported_reason: string | null;
+}
+
+// Değerleme kutucuklarının çarpan bazında tarihsel etiketi ve farkı (oran − 1,
+// kesir). Backend hüküm motoruyla aynı eşiklerle üretir (config/verdict.yaml
+// lenses.history); bu alanlardan önce kaydedilmiş snapshot'larda null gelir.
+export interface ValuationHistoryLabels {
+  pe_vs_history_label: VerdictPrice | null;
+  pb_vs_history_label: VerdictPrice | null;
+  ev_ebitda_vs_history_label: VerdictPrice | null;
+  pe_vs_history_diff: number | null;
+  pb_vs_history_diff: number | null;
+  ev_ebitda_vs_history_diff: number | null;
 }
