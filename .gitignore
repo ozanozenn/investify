@@ -26,3 +26,6 @@ out/
 
 # Logs
 *.log
+
+# Claude Code agent worktree kopyaları
+.claude/worktrees/
