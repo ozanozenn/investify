@@ -210,3 +210,37 @@ export interface Verdict {
   missing_fields: string[];
   unsupported_reason: string | null;
 }
+
+// --- Banka analizi (ADR-014) ---
+// apps/api/app/schemas/bank.py:BankMetrics aynası. Oranlar kesir (0.25 = %25).
+export interface BankMetrics {
+  as_of_period: string;
+  engine_version: string;
+  roe: number | null;
+  roa: number | null;
+  nim_proxy: number | null;
+  cost_income_ratio: number | null;
+  nii_growth_yoy: number | null;
+  net_income_growth_yoy: number | null;
+  equity_growth_yoy: number | null;
+  equity_to_assets: number | null;
+  loan_to_deposit: number | null;
+  provision_to_nii: number | null;
+  latest_net_interest_income: number | null;
+  latest_net_income: number | null;
+  latest_total_assets: number | null;
+  latest_equity: number | null;
+  latest_loans: number | null;
+  latest_deposits: number | null;
+  missing_fields: string[];
+}
+
+// Arayüz birleştirme (declaration merging): yukarıdaki tiplere dokunmadan
+// eklenen opsiyonel alanlar. Eski snapshot'larda bu alanlar yoktur.
+export interface CompanyAnalysisResponse {
+  bank_metrics?: BankMetrics | null;
+}
+
+export interface VerdictLens {
+  not_applicable?: boolean;
+}

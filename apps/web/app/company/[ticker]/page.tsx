@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { BANK_CATEGORY_HELP, BankDcfNote, BankMetricsCard } from "@/components/bank-metrics-card";
 import { DcfPanel } from "@/components/dcf-panel";
 import { Disclaimer } from "@/components/disclaimer";
 import { HistoricalComparisonPanel } from "@/components/historical-comparison-panel";
@@ -116,6 +117,8 @@ function CompanyDetail({
   refreshing: boolean;
 }) {
   const { company, market, metrics, valuation, scores, macro, disclosures, analysis, data_quality, sources, unsupported_reason, versions } = data;
+  // Bankalar (ADR-014): genel finansal kart ve DCF yerine banka görünümü.
+  const bank = data.bank_metrics ?? null;
 
   const whatMattersNow = [...analysis.key_catalysts.slice(0, 3), ...analysis.key_risks.slice(0, 2)].slice(0, 5);
 
@@ -159,12 +162,12 @@ function CompanyDetail({
             help="0-100 arası tek bir özet puan. Aşağıdaki 5 kategorinin ağırlıklı ortalamasıdır — şirketin sayılarla ne kadar sağlıklı göründüğünü tek bakışta özetler. Bir alım/satım tavsiyesi değildir."
           />
           <div className="grid gap-3 sm:grid-cols-2">
-            {(["growth", "profitability", "balance_sheet", "cash_flow", "valuation"] as const).map((key) => (
+            {(["growth", "profitability", "balance_sheet", "cash_flow", "valuation"] as const).filter((key) => scores.overall_weights[key] !== 0).map((key) => (
               <ScoreBar
                 key={key}
                 label={CATEGORY_LABEL[key] ?? key}
                 score={(scores[key] as CategoryScore).score}
-                help={CATEGORY_HELP[key]}
+                help={(bank ? BANK_CATEGORY_HELP : CATEGORY_HELP)[key]}
               />
             ))}
           </div>
@@ -198,7 +201,7 @@ function CompanyDetail({
         </CardBody>
       </Card>
 
-      <DcfPanel ticker={ticker} currentPrice={market.price} currency={market.currency} />
+      {bank ? <BankDcfNote /> : <DcfPanel ticker={ticker} currentPrice={market.price} currency={market.currency} />}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <HistoricalComparisonPanel ticker={ticker} />
@@ -207,6 +210,8 @@ function CompanyDetail({
 
       <SectionLabel>Detaylar — Finansallar ve yapay zekâ yorumu</SectionLabel>
 
+      {bank && <BankMetricsCard metrics={bank} currency={market.currency} />}
+      {!bank && (
       <Card>
         <CardHeader title="Finansal Göstergeler" subtitle={`${metrics.as_of_period} dönemi itibarıyla`} />
         <CardBody className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -225,6 +230,7 @@ function CompanyDetail({
           <StatTile label="Serbest Nakit Akışı Marjı" value={formatPercent(metrics.fcf_margin)} help="Serbest Nakit Akışı / Hasılat." />
         </CardBody>
       </Card>
+      )}
 
       {whatMattersNow.length > 0 && (
         <Card>
