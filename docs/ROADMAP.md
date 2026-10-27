@@ -43,7 +43,7 @@ later, rather than build it speculatively now.
 - REIT/GYO (NAV, NAV discount, occupancy) and Holding (SOTP, holding
   discount) engines.
 
-## Phase 4 — News, watchlist, alerts (in progress — news + calendar done)
+## Phase 4 — News, watchlist, alerts (in progress — news + calendar + watchlist done)
 
 - ✅ **News aggregation** — `app/providers/news/google_news_provider.py`
   (Google News RSS search, no API key), title-similarity dedup. No
@@ -80,8 +80,13 @@ later, rather than build it speculatively now.
   KAP market feed rather than a separate scraper (no dedicated BIST IPO
   data source integrated). V2 (per-template detail-page parsing for exact
   dates) is a candidate future iteration, not started.
-- Watchlist — not started (user decision 2026-09-17: deferred, not
-  requested yet).
+- ✅ **Watchlist + scheduled refresh + home dashboard** (2026-10-27,
+  ADR-013) — `watchlist_items` table, `/api/watchlist` CRUD with a
+  server-built summary (price, verdict incl. demo signal, overall score and
+  change vs. previous snapshot, last refresh, last job failure), weekday
+  after-close in-process scheduler + "Şimdi yenile" manual trigger, home
+  page "İzleme Listem" + TCMB/KAP market strip, add/remove toggle on the
+  company page.
 - Alert engine (score change, new important KAP, valuation threshold) —
   not started (user decision 2026-09-17: "anlık bildirim" explicitly
   deferred, not needed right now).

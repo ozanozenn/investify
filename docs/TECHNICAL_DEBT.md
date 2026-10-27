@@ -81,6 +81,13 @@ block the Phase 1 Definition of Done; all are candidates for Phase 2+.
   task (or equivalent) once either need materializes — its signature was
   kept side-effect-isolated (one `AsyncSession`, no global state) for
   exactly this reason.
+- Scheduled watchlist refresh (ADR-013) is an **in-process asyncio loop**,
+  not a durable scheduler: a run missed while the API is down is not
+  caught up; job state (`running`, last report) lives in process memory, so
+  with several uvicorn workers `GET /api/watchlist` may not see a run
+  happening in another worker (per-ticker results are in the DB). No
+  per-ticker timeout — relies on providers' own HTTP timeouts. Revisit
+  together with the Celery item above if any of this starts to matter.
 
 ## Testing
 
