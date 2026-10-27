@@ -11,6 +11,8 @@ import { NavBar } from "@/components/nav-bar";
 import { NewsPanel } from "@/components/news-panel";
 import { OutlookCard } from "@/components/outlook-card";
 import { PeerComparisonPanel } from "@/components/peer-comparison-panel";
+import { QualityFlagsCard } from "@/components/quality-flags-card";
+import { RealGrowthTiles } from "@/components/real-growth-tiles";
 import { VerdictCard } from "@/components/verdict-card";
 import { Badge, toneForScore } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -171,6 +173,8 @@ function CompanyDetail({
         </CardBody>
       </Card>
 
+      {data.quality_flags && <QualityFlagsCard qualityFlags={data.quality_flags} />}
+
       <Card>
         <CardHeader title="Değerleme" subtitle={`Son ${valuation.history_years_used} yıl tarihsel karşılaştırma`} />
         <CardBody className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -223,6 +227,7 @@ function CompanyDetail({
           />
           <StatTile label="Borç / Özkaynak" value={formatMultiple(metrics.debt_to_equity)} help="Toplam Borç / Özkaynak." />
           <StatTile label="Serbest Nakit Akışı Marjı" value={formatPercent(metrics.fcf_margin)} help="Serbest Nakit Akışı / Hasılat." />
+          {data.real_growth && <RealGrowthTiles realGrowth={data.real_growth} />}
         </CardBody>
       </Card>
 
