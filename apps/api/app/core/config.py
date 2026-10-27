@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import Field
@@ -41,6 +42,14 @@ class Settings(BaseSettings):
     # --- Providers ---
     evds_api_key: str | None = Field(default=None)
     request_timeout_seconds: float = Field(default=15.0)
+
+    # --- Financial statement sources (ADR-015) ---
+    # Default = yfinance only (pre-ADR-015 behaviour). İş Yatırım stays off
+    # until the owner live-verifies it with scripts/verify_isyatirim.py.
+    # The fallback is also the cross-check partner; cross-check needs one.
+    financial_provider_primary: Literal["yfinance", "isyatirim"] = Field(default="yfinance")
+    financial_provider_fallback: Literal["none", "yfinance", "isyatirim"] = Field(default="none")
+    financial_cross_check: bool = Field(default=False)
 
     # --- LLM ---
     # Provider selection is automatic from which key is set (see
@@ -84,6 +93,12 @@ def get_scoring_config() -> dict:
 @lru_cache
 def get_analysis_config() -> dict:
     with open(CONFIG_DIR / "analysis.yaml", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+@lru_cache
+def get_financial_sources_config() -> dict:
+    with open(CONFIG_DIR / "financial_sources.yaml", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 

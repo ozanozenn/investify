@@ -44,6 +44,7 @@ from app.services import persistence
 from app.services.company_bootstrap import get_or_create_company
 from app.services.context_builder import build_context
 from app.services.data_quality import compute_data_quality
+from app.services.financial_sources import financial_source_warnings
 from app.services.peer_comparison import peer_medians_for_company
 from app.services.provider_bundle import ProviderBundle
 from app.valuation_engine.dcf import compute_dcf
@@ -280,6 +281,7 @@ async def run_refresh(
     await session.commit()
 
     data_quality = compute_data_quality(metrics, stage_results, market_available=quote is not None)
+    data_quality.warnings.extend(financial_source_warnings(raw_periods))  # ADR-015
 
     peer_medians = None
     if not unsupported_reason:
