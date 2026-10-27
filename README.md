@@ -1,8 +1,9 @@
 # Investify — BIST Investment Intelligence Platform
 
 A personal, evidence-based investment research platform for Borsa İstanbul
-(BIST) companies. **Not a trading bot and never produces a BUY/SELL/HOLD
-signal** — it organizes the financial, valuation, KAP, macro and LLM-
+(BIST) companies. **Not a trading bot.** A rule-based AL/TUT/SAT signal
+is shown as a clearly-labelled demo only (ADR-011, one flag turns it off) —
+the product's job is to organize the financial, valuation, KAP, macro and LLM-
 interpreted context a careful analyst would want before deciding, so the
 user can decide for themself. Full product vision: `MAIN_ROADMAP.md`. This
 delivery implements **Phase 1** only — see `docs/PHASE_1_SCOPE.md`.

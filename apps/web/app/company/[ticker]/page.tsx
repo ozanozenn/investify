@@ -11,6 +11,7 @@ import { NavBar } from "@/components/nav-bar";
 import { NewsPanel } from "@/components/news-panel";
 import { OutlookCard } from "@/components/outlook-card";
 import { PeerComparisonPanel } from "@/components/peer-comparison-panel";
+import { VerdictCard } from "@/components/verdict-card";
 import { Badge, toneForScore } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
@@ -138,6 +139,8 @@ function CompanyDetail({
         </Card>
       )}
 
+      {data.verdict && <VerdictCard verdict={data.verdict} />}
+
       <Card>
         <CardHeader title="Yapay Zekâ Özeti" subtitle={analysis._meta.llm_is_mocked ? "Mock LLM — OPENAI_API_KEY veya GEMINI_API_KEY tanımlı değil" : `Model: ${analysis._meta.llm_model}`} />
         <CardBody>
@@ -145,29 +148,7 @@ function CompanyDetail({
         </CardBody>
       </Card>
 
-      {whatMattersNow.length > 0 && (
-        <Card>
-          <CardHeader title="ŞU AN ÖNEMLİ OLANLAR" />
-          <CardBody>
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {whatMattersNow.map((item, i) => (
-                <li key={i} className="rounded-md bg-surface-hover px-3 py-2 text-xs text-foreground">
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </CardBody>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader title="Yatırım Görünümü" />
-        <CardBody className="grid gap-3 sm:grid-cols-3">
-          <OutlookCard title="Kısa Vade (0-6 ay)" horizon={analysis.short_term} />
-          <OutlookCard title="Orta Vade (6-24 ay)" horizon={analysis.medium_term} />
-          <OutlookCard title="Uzun Vade (2-5+ yıl)" horizon={analysis.long_term} />
-        </CardBody>
-      </Card>
+      <SectionLabel>Neden? — Skor ve değerleme</SectionLabel>
 
       <Card>
         <CardHeader title="Skor Kartı" subtitle={`Deterministik skorlama motoru ${versions.scoring_engine}`} />
@@ -187,25 +168,6 @@ function CompanyDetail({
               />
             ))}
           </div>
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader title="Finansal Göstergeler" subtitle={`${metrics.as_of_period} dönemi itibarıyla`} />
-        <CardBody className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatTile label="Yıllık Gelir Büyümesi" value={formatPercent(metrics.revenue_growth_yoy)} help="Son yıllık dönemin bir önceki yıla göre ciro büyümesi." />
-          <StatTile label="3 Yıllık Ort. Büyüme (BYBO)" value={formatPercent(metrics.revenue_cagr_3y)} help="Son 3 yıllık bileşik yıllık büyüme oranı." />
-          <StatTile label="FAVÖK Marjı" value={formatPercent(metrics.ebitda_margin)} help="FAVÖK / Hasılat." />
-          <StatTile label="Net Kâr Marjı" value={formatPercent(metrics.net_margin)} help="Net Kâr / Hasılat." />
-          <StatTile label="Özkaynak Kârlılığı (ROE)" value={formatPercent(metrics.roe)} help="Net Kâr / Ortalama Özkaynak." />
-          <StatTile
-            label="Net Borç / FAVÖK"
-            value={formatMultiple(metrics.net_debt_to_ebitda)}
-            tone={metrics.net_debt_to_ebitda !== null && metrics.net_debt_to_ebitda > 3 ? "negative" : "neutral"}
-            help="Net Borç / FAVÖK — kaldıraç göstergesi. Düşük daha sağlıklıdır."
-          />
-          <StatTile label="Borç / Özkaynak" value={formatMultiple(metrics.debt_to_equity)} help="Toplam Borç / Özkaynak." />
-          <StatTile label="Serbest Nakit Akışı Marjı" value={formatPercent(metrics.fcf_margin)} help="Serbest Nakit Akışı / Hasılat." />
         </CardBody>
       </Card>
 
@@ -243,6 +205,51 @@ function CompanyDetail({
         <PeerComparisonPanel ticker={ticker} />
       </div>
 
+      <SectionLabel>Detaylar — Finansallar ve yapay zekâ yorumu</SectionLabel>
+
+      <Card>
+        <CardHeader title="Finansal Göstergeler" subtitle={`${metrics.as_of_period} dönemi itibarıyla`} />
+        <CardBody className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatTile label="Yıllık Gelir Büyümesi" value={formatPercent(metrics.revenue_growth_yoy)} help="Son yıllık dönemin bir önceki yıla göre ciro büyümesi." />
+          <StatTile label="3 Yıllık Ort. Büyüme (BYBO)" value={formatPercent(metrics.revenue_cagr_3y)} help="Son 3 yıllık bileşik yıllık büyüme oranı." />
+          <StatTile label="FAVÖK Marjı" value={formatPercent(metrics.ebitda_margin)} help="FAVÖK / Hasılat." />
+          <StatTile label="Net Kâr Marjı" value={formatPercent(metrics.net_margin)} help="Net Kâr / Hasılat." />
+          <StatTile label="Özkaynak Kârlılığı (ROE)" value={formatPercent(metrics.roe)} help="Net Kâr / Ortalama Özkaynak." />
+          <StatTile
+            label="Net Borç / FAVÖK"
+            value={formatMultiple(metrics.net_debt_to_ebitda)}
+            tone={metrics.net_debt_to_ebitda !== null && metrics.net_debt_to_ebitda > 3 ? "negative" : "neutral"}
+            help="Net Borç / FAVÖK — kaldıraç göstergesi. Düşük daha sağlıklıdır."
+          />
+          <StatTile label="Borç / Özkaynak" value={formatMultiple(metrics.debt_to_equity)} help="Toplam Borç / Özkaynak." />
+          <StatTile label="Serbest Nakit Akışı Marjı" value={formatPercent(metrics.fcf_margin)} help="Serbest Nakit Akışı / Hasılat." />
+        </CardBody>
+      </Card>
+
+      {whatMattersNow.length > 0 && (
+        <Card>
+          <CardHeader title="ŞU AN ÖNEMLİ OLANLAR" />
+          <CardBody>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {whatMattersNow.map((item, i) => (
+                <li key={i} className="rounded-md bg-surface-hover px-3 py-2 text-xs text-foreground">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </CardBody>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader title="Yatırım Görünümü" />
+        <CardBody className="grid gap-3 sm:grid-cols-3">
+          <OutlookCard title="Kısa Vade (0-6 ay)" horizon={analysis.short_term} />
+          <OutlookCard title="Orta Vade (6-24 ay)" horizon={analysis.medium_term} />
+          <OutlookCard title="Uzun Vade (2-5+ yıl)" horizon={analysis.long_term} />
+        </CardBody>
+      </Card>
+
       <Card>
         <CardHeader title="Yatırım Tezi" />
         <CardBody className="grid gap-4 sm:grid-cols-2">
@@ -253,6 +260,8 @@ function CompanyDetail({
           <ThesisList title="Tezi Geçersiz Kılacak Faktörler" items={analysis.thesis_breakers} tone="negative" full />
         </CardBody>
       </Card>
+
+      <SectionLabel>Bağlam — Haberler, KAP ve makro</SectionLabel>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
@@ -400,7 +409,7 @@ function HeaderSection({
           )}
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <div className="text-right">
             <div className="font-tabular text-2xl font-semibold text-foreground">
               {market.price ? `${market.price.toFixed(2)} ${market.currency}` : "—"}
@@ -517,4 +526,8 @@ function ThesisList({
       )}
     </div>
   );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <h2 className="pt-4 text-xs font-semibold uppercase tracking-wide text-muted">{children}</h2>;
 }

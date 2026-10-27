@@ -72,14 +72,20 @@ The pipeline shape above hasn't changed; these are new branches off it:
   `KapDisclosureProvider`'s market-wide methods directly and are stateless
   (ADR-009). `next_rate_decision_date` is the one piece of calendar data
   that *does* feed into a company's own `StructuredAnalysisContext`.
+- **Verdict** (ADR-011): `verdict_engine/engine.py` combines the valuation,
+  score and data quality (plus peer medians from
+  `services/peer_comparison.py:peer_medians_for_company`) into the
+  "Hüküm" card — Ucuz/Makul/Pahalı, Güçlü/Orta/Zayıf, confidence and a
+  demo AL/TUT/SAT signal. Computed during refresh, stored in the
+  snapshot's `context_json.verdict`; not yet part of the LLM prompt.
 
 ## Import direction (enforced by convention, see ADR-001)
 
 ```
-api/routers -> services -> {providers, financial_engine, scoring_engine, valuation_engine, llm} -> models
+api/routers -> services -> {providers, financial_engine, scoring_engine, valuation_engine, verdict_engine, llm} -> models
 ```
 
-`financial_engine`, `scoring_engine`, `valuation_engine` are pure: typed
+`financial_engine`, `scoring_engine`, `valuation_engine`, `verdict_engine` are pure: typed
 input in, typed (`score`, `contribution`, `reason`) output out, no I/O. This
 is what makes them independently unit-testable against fixtures (section 49)
 and is the mechanism behind the "LLM never computes" rule (ADR-003).

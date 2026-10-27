@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import Settings, get_analysis_config, get_tcmb_calendar_config
+from app.core.config import Settings, get_analysis_config, get_tcmb_calendar_config, get_verdict_config
 from app.core.logging import get_logger
 from app.financial_engine import formulas
 from app.financial_engine.engine import compute_financial_metrics
@@ -44,9 +44,11 @@ from app.services import persistence
 from app.services.company_bootstrap import get_or_create_company
 from app.services.context_builder import build_context
 from app.services.data_quality import compute_data_quality
+from app.services.peer_comparison import peer_medians_for_company
 from app.services.provider_bundle import ProviderBundle
 from app.valuation_engine.dcf import compute_dcf
 from app.valuation_engine.engine import compute_valuation
+from app.verdict_engine.engine import compute_verdict
 
 logger = get_logger(__name__)
 
@@ -279,6 +281,21 @@ async def run_refresh(
 
     data_quality = compute_data_quality(metrics, stage_results, market_available=quote is not None)
 
+    peer_medians = None
+    if not unsupported_reason:
+        try:
+            peer_medians = await peer_medians_for_company(session, company)
+        except Exception as exc:  # hüküm sektör yöntemi olmadan devam eder
+            logger.warning("peer_medians_failed", extra={"ticker": ticker, "error": str(exc)})
+    verdict = compute_verdict(
+        valuation=valuation,
+        scores=scores,
+        data_quality_overall=data_quality.overall,
+        peers=peer_medians,
+        config=get_verdict_config(),
+        unsupported_reason=unsupported_reason,
+    )
+
     company_context = CompanyContext(
         ticker=ticker,
         name=company.name,
@@ -310,6 +327,7 @@ async def run_refresh(
         sources=sources,
         unsupported_reason=unsupported_reason,
         next_rate_decision_date=_next_rate_decision_date(),
+        verdict=verdict,
     )
 
     try:

@@ -1,0 +1,37 @@
+# Hüküm kartı eşikleri (ADR-011). Gizli değil, versiyon kontrollü.
+# Oranlar kesir olarak: 0.15 == %15.
+
+version: v1
+
+# Tek bir değerleme bakış açısının "ucuz/pahalı" sayılma eşikleri.
+lenses:
+  history:   # güncel çarpan / kendi 5 yıllık medyanı
+    cheap_below: 0.85
+    expensive_above: 1.15
+  peers:     # güncel çarpan / sektör medyanı
+    cheap_below: 0.85
+    expensive_above: 1.15
+    min_peer_count: 2
+  dcf:       # baz senaryo içsel değerin güncel fiyata göre farkı
+    cheap_above_upside: 0.20
+    expensive_below_upside: -0.20
+
+# Fiyat hükmü: oy veren yöntemlerin yarısından fazlası aynı şeyi demeli
+# (3'te 2, 2'de 2, 1'de 1). Çoğunluk yoksa hüküm yok — ortalama alınmaz.
+
+# Genel skor (0-100) -> kalite.
+quality:
+  strong_at_or_above: 65
+  medium_at_or_above: 45
+
+# Güven: kaç bakış açısı var, ne kadar uzlaşıyorlar, veri kalitesi.
+confidence:
+  high_min_lenses: 2
+  high_min_agreement: 1.0
+  high_min_data_quality: 0.7
+  low_below_data_quality: 0.5
+
+# DEMO: AL/SAT/TUT sinyali (kullanıcı kararı 2026-10-12). Kapatmak için false.
+# Güven DÜŞÜK ise sinyal verilmez.
+signal:
+  enabled: true

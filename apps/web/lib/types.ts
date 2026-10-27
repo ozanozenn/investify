@@ -171,6 +171,7 @@ export interface CompanyAnalysisResponse {
   sources: SourceRef[];
   analysis: LLMAnalysis;
   unsupported_reason: string | null;
+  verdict: Verdict | null;
   versions: Record<string, string>;
   stage_results: Record<string, string> | null;
 }
@@ -180,4 +181,32 @@ export interface CompanySearchResult {
   name: string;
   sector: string | null;
   industry: string | null;
+}
+
+export type VerdictPrice = "UCUZ" | "MAKUL" | "PAHALI";
+export type VerdictQuality = "GUCLU" | "ORTA" | "ZAYIF";
+export type VerdictConfidence = "YUKSEK" | "ORTA" | "DUSUK";
+export type VerdictSignal = "AL" | "TUT" | "SAT";
+
+export interface VerdictLens {
+  key: "history" | "peers" | "dcf";
+  label: string;
+  verdict: VerdictPrice | null;
+  value: number | null;
+  reason: string;
+}
+
+export interface Verdict {
+  price: VerdictPrice | null;
+  quality: VerdictQuality | null;
+  confidence: VerdictConfidence;
+  signal: VerdictSignal | null;
+  signal_is_demo: boolean;
+  headline: string;
+  lenses: VerdictLens[];
+  agreement: number | null;
+  overall_score: number | null;
+  engine_version: string;
+  missing_fields: string[];
+  unsupported_reason: string | null;
 }

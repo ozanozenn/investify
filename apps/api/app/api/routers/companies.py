@@ -64,6 +64,7 @@ def _snapshot_to_response(snapshot: AnalysisSnapshot, stage_results: dict[str, s
         sources=ctx["sources"],
         analysis=snapshot.analysis_json,
         unsupported_reason=ctx.get("unsupported_reason"),
+        verdict=ctx.get("verdict"),
         versions={
             "financial_engine": snapshot.financial_engine_version,
             "scoring_engine": snapshot.scoring_engine_version,

@@ -12,12 +12,9 @@ const OUTLOOK_LABEL: Record<string, string> = {
 export function OutlookCard({ title, horizon }: { title: string; horizon: HorizonOutlook }) {
   return (
     <div className="rounded-lg border border-border bg-surface p-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted">{title}</span>
-        <span className="font-tabular text-[11px] text-muted">
-          Güven {(horizon.confidence * 100).toFixed(0)}%
-        </span>
-      </div>
+      {/* LLM'in kendi "güven" puanı gösterilmez — sayı üretmek LLM'in işi
+          değil (ADR-003). Güvenilirlik deterministik Hüküm kartında. */}
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted">{title}</span>
       <div className="mt-2">
         <Badge tone={toneForOutlook(horizon.outlook)}>{OUTLOOK_LABEL[horizon.outlook] ?? horizon.outlook}</Badge>
       </div>

@@ -91,3 +91,9 @@ def get_analysis_config() -> dict:
 def get_tcmb_calendar_config() -> dict:
     with open(CONFIG_DIR / "tcmb_calendar.yaml", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+@lru_cache
+def get_verdict_config() -> dict:
+    with open(CONFIG_DIR / "verdict.yaml", encoding="utf-8") as f:
+        return yaml.safe_load(f)

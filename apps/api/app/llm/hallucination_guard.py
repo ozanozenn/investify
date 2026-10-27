@@ -59,7 +59,8 @@ def _collect_context_numbers(context: StructuredAnalysisContext) -> list[float]:
             for v in obj:
                 walk(v)
 
-    walk(context.model_dump(mode="json"))
+    # Hüküm (ADR-011) LLM prompt'una girmiyor; onun sayıları LLM'i "doğrulamamalı".
+    walk(context.model_dump(mode="json", exclude={"verdict"}))
     return numbers
 
 

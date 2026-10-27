@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from app.schemas.financial import FinancialHistoryPoint, FinancialMetrics
 from app.schemas.scoring import ScoreResult
 from app.schemas.valuation import ValuationMetrics
+from app.schemas.verdict import Verdict
 
 
 class CompanyContext(BaseModel):
@@ -78,3 +79,5 @@ class StructuredAnalysisContext(BaseModel):
     sources: list[SourceRef]
     unsupported_reason: str | None = None
     next_rate_decision_date: dt.date | None = None
+    # Eski snapshot'larda yok (ADR-011'den önce) — bu yüzden opsiyonel.
+    verdict: Verdict | None = None
