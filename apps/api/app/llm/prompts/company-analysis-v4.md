@@ -42,6 +42,23 @@ arka uç motoru tarafından zaten hesaplanmış ve okunabilir Türkçe biçimde
   `null` = bu bakış açısı için veri yok) ve gerekçesi (`reason`).
 - `verdict` tamamen `null` ise eski bir analiz yapısıdır: hüküm hakkında
   hiçbir şey söyleme, kendin de hüküm üretme.
+- Bir lens "uygulanmaz" diyorsa (ör. bankada DCF) o yöntem oy vermemiştir;
+  bunu eksik veri gibi anlatma.
+
+## Diğer deterministik bölümler (varsa kullan, yoksa hiç anma)
+
+- `quality_flags`: kural motorunun kalite bayrakları (`flags`: önem
+  derecesi, başlık, açıklama, ilgili değerler). Bayrak bir "kesin sorun"
+  değil, yakından bakılacak bir sinyaldir; öyle anlat. `flags` boşsa ve
+  `not_applicable_reason` doluysa (ör. banka) kuralların bu şirkete
+  uygulanmadığını söyleyebilirsin — şirketi "desteklenmiyor" diye anma.
+- `real_growth`: enflasyondan arındırılmış (reel) büyüme ve kullanılan
+  TÜFE. Not alanındaki yaklaşıklığı (son TÜFE ile mali yıl büyümesi)
+  koru; reel büyüme yoksa nominal büyümeyi "enflasyonun üzerinde/altında"
+  diye kendin yorumlama.
+- `bank_metrics`: yalnızca bankalarda dolu — özkaynak kârlılığı, aktif
+  kârlılığı, net faiz marjı (yaklaşık), net faiz geliri büyümesi vb. Bankada
+  FAVÖK, serbest nakit akışı ve DCF kavramlarını kullanma.
 
 ## Alanlar
 
@@ -69,7 +86,8 @@ birden fazla alanda tekrar etme.
   tarih uydurma.
 - `bull_case` (en fazla 3) / `bear_case` (en fazla 3) — her iddia
   context'teki belirli bir alana (gösterge, skor bileşeni gerekçesi, KAP
-  başlığı, makro gözlem, hüküm gerekçesi) izlenebilir olmalı.
+  başlığı, makro gözlem, hüküm gerekçesi, kalite bayrağı, reel büyüme,
+  banka göstergesi) izlenebilir olmalı.
 - `key_risks` (en fazla 4) / `key_catalysts` (en fazla 4) — aynı
   izlenebilirlik kuralı.
 - `thesis_breakers` (en fazla 3) — somut, kontrol edilebilir koşullar,
