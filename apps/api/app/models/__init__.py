@@ -11,6 +11,7 @@ from app.models.snapshots import (
     ScoreSnapshot,
     ValuationSnapshot,
 )
+from app.models.watchlist import WatchlistItem
 
 __all__ = [
     "Base",
@@ -30,4 +31,5 @@ __all__ = [
     "FinancialMetricSnapshot",
     "ScoreSnapshot",
     "ValuationSnapshot",
+    "WatchlistItem",
 ]
