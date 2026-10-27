@@ -16,6 +16,7 @@ from app.schemas.quote import LiveQuote
 from app.services.cache import JsonCache, get_cache
 from app.services.live_quote import QuoteUnavailableError, get_live_quote
 from app.services.provider_bundle import ProviderBundle
+from app.services.watchlist import InvalidTickerError, normalize_ticker
 
 router = APIRouter(prefix="/api/companies", tags=["quote"], dependencies=[Depends(require_user)])
 
@@ -28,6 +29,13 @@ async def get_company_quote(
     cache: JsonCache = Depends(get_cache),
     settings: Settings = Depends(get_settings),
 ):
+    # Doğrulanmamış kod sağlayıcıya ve önbellek anahtarına gitmesin.
+    try:
+        ticker = normalize_ticker(ticker)
+    except InvalidTickerError as exc:
+        raise HTTPException(
+            status_code=422, detail=f"Geçersiz hisse kodu: '{ticker.strip()}'. Yalnızca harf ve rakam kullanılabilir."
+        ) from exc
     try:
         return await get_live_quote(
             db, ticker, providers.market, cache, settings.quote_cache_ttl_seconds

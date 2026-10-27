@@ -39,3 +39,27 @@ async def test_login_then_token_grants_access(auth_on):
         "/api/companies/search", params={"q": "THY"}, headers={"Authorization": f"Bearer {token}"}
     )
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "method,path",
+    [
+        ("get", "/api/companies/THYAO/quote"),
+        ("get", "/api/watchlist"),
+        ("post", "/api/watchlist/refresh"),
+        ("delete", "/api/watchlist/THYAO"),
+        ("get", "/api/companies/THYAO/analysis"),
+        ("get", "/api/calendar"),
+        ("get", "/api/market/news"),
+    ],
+)
+async def test_every_data_route_requires_a_token(auth_on, method, path):
+    resp = await getattr(auth_on, method)(path)
+    assert resp.status_code == 401, path
+
+
+@pytest.mark.asyncio
+async def test_quote_rejects_invalid_ticker(client):
+    resp = await client.get("/api/companies/TH%20YAO!/quote")
+    assert resp.status_code == 422
