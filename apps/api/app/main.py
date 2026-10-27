@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers import auth, calendar, companies, comparisons, dcf, health, market, news, peers
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, request_id_ctx
+from app.api.routers import watchlist
+from app.lifespan import lifespan
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -18,6 +20,7 @@ app = FastAPI(
     title="Investify API",
     description="BIST Investment Intelligence Platform — Phase 1 backend",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -61,3 +64,4 @@ app.include_router(comparisons.router)
 app.include_router(news.router)
 app.include_router(market.router)
 app.include_router(calendar.router)
+app.include_router(watchlist.router)
