@@ -2,6 +2,7 @@
 // gelir (skor değişimi dahil); burada yalnızca istek atılır.
 
 import type { VerdictConfidence, VerdictPrice, VerdictQuality, VerdictSignal } from "./types";
+import { authHeaders, handleUnauthorized } from "./auth";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -18,10 +19,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders(),
       ...(init?.headers ?? {}),
     },
     cache: "no-store",
   });
+  handleUnauthorized(res.status);
   if (!res.ok) {
     const body = await res.text();
     let message = body || res.statusText;

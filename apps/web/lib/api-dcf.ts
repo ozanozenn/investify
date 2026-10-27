@@ -1,3 +1,4 @@
+import { authHeaders, handleUnauthorized } from "./auth";
 // Mirrors apps/api/app/schemas/dcf.py:DcfResult and its nested schemas.
 // Kept as a hand-written mirror (same practice as lib/types.ts) rather than a
 // codegen step. New file (not lib/api.ts / lib/types.ts) so this panel's
@@ -59,10 +60,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders(),
       ...(init?.headers ?? {}),
     },
     cache: "no-store",
   });
+  handleUnauthorized(res.status);
   if (!res.ok) {
     const body = await res.text();
     throw new DcfApiError(res.status, body || res.statusText);

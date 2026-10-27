@@ -1,3 +1,4 @@
+import { authHeaders, handleUnauthorized } from "./auth";
 // Mirrors apps/api/app/schemas/quote.py:LiveQuote. Ayrı dosya (lib/api.ts /
 // lib/types.ts değil) — diğer panellerin api-*.ts dosyalarıyla aynı düzen.
 
@@ -22,9 +23,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8
 
 export async function getCompanyQuote(ticker: string): Promise<LiveQuote> {
   const res = await fetch(`${API_BASE_URL}/api/companies/${encodeURIComponent(ticker)}/quote`, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     cache: "no-store",
   });
+  handleUnauthorized(res.status);
   if (!res.ok) {
     const body = await res.text();
     throw new Error(body || res.statusText);

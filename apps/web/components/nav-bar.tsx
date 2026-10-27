@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogoutButton } from "@/components/logout-button";
 import { SearchBox } from "@/components/search-box";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/cn";
@@ -46,8 +47,9 @@ export function NavBar({ showSearch = false }: { showSearch?: boolean }) {
           </div>
         )}
 
-        <div className={cn("shrink-0", !showSearch && "ml-auto")}>
+        <div className={cn("flex shrink-0 items-center gap-2", !showSearch && "ml-auto")}>
           <ThemeToggle />
+          <LogoutButton />
         </div>
       </div>
     </header>

@@ -1,3 +1,4 @@
+import { authHeaders, handleUnauthorized } from "./auth";
 // Mirrors apps/api/app/schemas/peer.py:PeerComparisonResult and its nested
 // schemas. Kept as a hand-written mirror (see lib/types.ts for the same
 // convention) rather than a codegen step — single place to update if the
@@ -18,10 +19,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders(),
       ...(init?.headers ?? {}),
     },
     cache: "no-store",
   });
+  handleUnauthorized(res.status);
   if (!res.ok) {
     const body = await res.text();
     throw new ApiError(res.status, body || res.statusText);
