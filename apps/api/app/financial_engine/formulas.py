@@ -82,3 +82,12 @@ def growth_consistency(growth_rates: list[float | None]) -> float | None:
     if not valid:
         return None
     return sum(1 for g in valid if g > 0) / len(valid)
+
+
+def real_growth(nominal_growth: float | None, inflation: float | None) -> float | None:
+    """Enflasyondan arındırılmış (reel) büyüme: (1 + nominal) / (1 + enflasyon) - 1.
+    İkisi de 0-1 ölçeğinde (0,42 = %42). None if either is missing or
+    inflation <= -100% (payda sıfır/negatif olur, anlamsız)."""
+    if nominal_growth is None or inflation is None or inflation <= -1:
+        return None
+    return (1 + nominal_growth) / (1 + inflation) - 1
