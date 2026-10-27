@@ -231,3 +231,13 @@ def test_small_percent_not_in_prompt_is_still_flagged():
     ctx = _context()
     ctx.metrics = FinancialMetrics(as_of_period="2025", net_margin=0.0175)
     assert len(find_unsupported_numbers(ctx, _result("Net kâr marjı %1,4 oldu."))) == 1
+
+
+def test_timestamp_digits_in_prompt_do_not_vouch_for_invented_numbers():
+    # Kararsız test kök nedeni: as_of "…T01:42:07" iken uydurma "42,7"
+    # zaman damgasındaki rakamlarla "destekleniyor" sayılıyordu.
+    ctx = _context()
+    ctx.as_of = dt.datetime(2026, 10, 28, 1, 42, 7, tzinfo=dt.timezone.utc)
+    ctx.market = MarketContext(price=10.0, currency="TRY", market_cap=1000.0,
+                               as_of=dt.datetime(2026, 10, 28, 1, 42, 7, tzinfo=dt.timezone.utc))
+    assert len(find_unsupported_numbers(ctx, _result("Net kâr marjı 42,7 seviyesinde."))) == 1

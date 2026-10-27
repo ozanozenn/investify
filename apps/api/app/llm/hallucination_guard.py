@@ -49,6 +49,15 @@ _DATE_RE = re.compile(
 # an ordinal marker, never a truncated decimal.
 _ORDINAL_RE = re.compile(r"\b\d{1,2}\.(?=\s)")
 
+# Prompt'taki tarih/kimlik alanları: içlerindeki rakamlar veri değildir.
+_NON_NUMERIC_KEYS = frozenset(
+    {"as_of", "observation_date", "published_at", "fetched_at", "source_url", "ticker", "code"}
+)
+_ISO_OR_URL_RE = re.compile(
+    r"https?://\S+"
+    r"|\b\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?\b"
+)
+
 
 def _collect_context_numbers(context: StructuredAnalysisContext) -> list[float]:
     numbers: list[float] = []
@@ -74,16 +83,22 @@ def _collect_context_numbers(context: StructuredAnalysisContext) -> list[float]:
     # toleransı aşar ve LLM'in birebir aktardığı doğru rakam yanlışlıkla
     # bayraklanırdı (ROA, reel büyüme, kalite bayrağı marjları). Hükmün
     # başlık/gerekçe metinleri de bu yolla kapsanır.
-    def walk_text(obj) -> None:
+    # Zaman damgaları/URL'ler sayı iddiası değildir; dahil edilirse dakika/
+    # saniye rakamları (ör. "01:42:07") uydurma bir "42,7"yi "context'te
+    # var" gösterirdi — saate bağlı, kararsız bir delik.
+    def walk_text(obj, key: str | None = None) -> None:
+        if key in _NON_NUMERIC_KEYS:
+            return
         if isinstance(obj, str):
-            for _literal, candidates in extract_number_candidates(obj):
+            cleaned = _ORDINAL_RE.sub(" ", _DATE_RE.sub(" ", _ISO_OR_URL_RE.sub(" ", obj)))
+            for _literal, candidates in extract_number_candidates(cleaned):
                 numbers.extend(candidates)
         elif isinstance(obj, dict):
-            for v in obj.values():
-                walk_text(v)
+            for k, v in obj.items():
+                walk_text(v, k)
         elif isinstance(obj, list):
             for v in obj:
-                walk_text(v)
+                walk_text(v, key)
 
     walk_text(format_context_for_prompt(context))
     return numbers
