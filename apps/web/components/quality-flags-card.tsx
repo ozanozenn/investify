@@ -42,12 +42,25 @@ function FlagRow({ flag }: { flag: QualityFlag }) {
 /** Kalite bayrakları (ADR-016). Her şey backend'deki deterministik kural
  * motorundan gelir; bu bileşen yalnızca gösterir, hiçbir şey hesaplamaz. */
 export function QualityFlagsCard({ qualityFlags }: { qualityFlags: QualityFlagsResult }) {
-  // Banka/GYO: sayfa zaten "desteklenmiyor" uyarısı gösteriyor.
+  // Sigorta/GYO: sayfa zaten "desteklenmiyor" uyarısı gösteriyor.
   if (qualityFlags.missing_fields.includes("unsupported_industry")) return null;
 
   const { flags, passed_checks, not_evaluated, as_of_period, engine_version } = qualityFlags;
   const noFinancials = qualityFlags.missing_fields.includes("no_financial_periods");
   const subtitle = `Deterministik kural motoru ${engine_version}${as_of_period ? ` · ${as_of_period} dönemi` : ""}`;
+
+  // Bankalar analiz ediliyor ama genel kurallar bankaya uymuyor; kartı
+  // sessizce gizlemek yerine nedenini söyle.
+  if (qualityFlags.not_applicable_reason) {
+    return (
+      <Card>
+        <CardHeader title="Kalite Bayrakları" subtitle={subtitle} action={<InfoTooltip text={HELP} />} />
+        <CardBody>
+          <p className="text-sm text-muted">{qualityFlags.not_applicable_reason}</p>
+        </CardBody>
+      </Card>
+    );
+  }
 
   return (
     <Card>

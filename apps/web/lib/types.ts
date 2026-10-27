@@ -267,6 +267,8 @@ export interface QualityFlagsResult {
   passed_checks: string[];
   not_evaluated: UnevaluatedQualityCheck[];
   missing_fields: string[];
+  /** Kurallar bu şirket türüne uygulanmıyorsa (ör. banka) nedeni; eski snapshot'larda yok. */
+  not_applicable_reason?: string | null;
 }
 
 export interface RealGrowth {
