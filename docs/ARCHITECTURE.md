@@ -24,6 +24,14 @@ section 5 of the Phase 1 addendum). The `services/refresh_pipeline.py` stage
 interface is written so it can be lifted into a Celery task later without
 changing its internals (see `docs/ROADMAP.md` Phase 2 notes).
 
+The one scheduled job (ADR-013) still avoids Celery: a small asyncio loop
+(`services/watchlist_scheduler.py`), started from the FastAPI lifespan
+(`app/lifespan.py`), runs `services/watchlist_refresh.py` on weekdays after
+BIST close — every watchlist ticker sequentially through `run_refresh`, each
+with its own `AsyncSession`. `POST /api/watchlist/refresh` starts the same
+job in the background. Duplicate runs across uvicorn workers are prevented
+by a Postgres advisory lock plus a per-slot "already refreshed" skip.
+
 ## Refresh pipeline (implemented)
 
 ```
