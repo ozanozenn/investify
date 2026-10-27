@@ -87,9 +87,10 @@ def _context(**overrides) -> StructuredAnalysisContext:
 
 
 def _result(text: str) -> LLMAnalysisResult:
-    empty = HorizonOutlook(outlook="NEUTRAL", confidence=0.5, drivers=[], risks=[], catalysts=[])
+    empty = HorizonOutlook(outlook="NEUTRAL", rationale="")
     return LLMAnalysisResult(
         executive_summary=text,
+        what_matters_now=[],
         short_term=empty,
         medium_term=empty,
         long_term=empty,

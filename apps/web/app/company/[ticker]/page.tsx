@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { DcfPanel } from "@/components/dcf-panel";
 import { Disclaimer } from "@/components/disclaimer";
+import { HallucinationWarning } from "@/components/hallucination-warning";
 import { HistoricalComparisonPanel } from "@/components/historical-comparison-panel";
 import { LivePrice } from "@/components/live-price";
 import { NavBar } from "@/components/nav-bar";
@@ -21,6 +22,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { BigScore, ScoreBar } from "@/components/ui/score-bar";
 import { StatTile } from "@/components/ui/stat-tile";
+import { getWhatMattersNow } from "@/lib/analysis";
 import { ApiError, getCompanyAnalysis, refreshCompanyAnalysis } from "@/lib/api";
 import { formatDateTime, formatMultiple, formatNumber, formatPercent, formatRelativeTime } from "@/lib/format";
 import type { CategoryScore } from "@/lib/types";
@@ -121,7 +123,7 @@ function CompanyDetail({
 }) {
   const { company, market, metrics, valuation, scores, macro, disclosures, analysis, data_quality, sources, unsupported_reason, versions } = data;
 
-  const whatMattersNow = [...analysis.key_catalysts.slice(0, 3), ...analysis.key_risks.slice(0, 2)].slice(0, 5);
+  const whatMattersNow = getWhatMattersNow(analysis);
 
   return (
     <div className="space-y-4">
@@ -149,6 +151,7 @@ function CompanyDetail({
         <CardHeader title="Yapay Zekâ Özeti" subtitle={analysis._meta.llm_is_mocked ? "Mock LLM — OPENAI_API_KEY veya GEMINI_API_KEY tanımlı değil" : `Model: ${analysis._meta.llm_model}`} />
         <CardBody>
           <p className="text-sm leading-relaxed text-foreground">{analysis.executive_summary}</p>
+          <HallucinationWarning meta={analysis._meta} />
         </CardBody>
       </Card>
 

@@ -129,16 +129,21 @@ export interface SourceRef {
 
 export type Outlook = "POSITIVE" | "NEUTRAL_POSITIVE" | "NEUTRAL" | "NEUTRAL_NEGATIVE" | "NEGATIVE";
 
+// analysis_json snapshot'ta değişmez saklanır (ADR-005): v4 (rationale)
+// ve v1-v3 (drivers/risks/catalysts/confidence) şekilleri yan yana
+// yaşar — bileşenler hangisi varsa onu gösterir.
 export interface HorizonOutlook {
   outlook: Outlook;
-  confidence: number;
-  drivers: string[];
-  risks: string[];
-  catalysts: string[];
+  rationale?: string; // company-analysis-v4+
+  confidence?: number; // v1-v3, arayüzde gösterilmez (ADR-003)
+  drivers?: string[]; // v1-v3
+  risks?: string[]; // v1-v3
+  catalysts?: string[]; // v1-v3
 }
 
 export interface LLMAnalysis {
   executive_summary: string;
+  what_matters_now?: string[]; // company-analysis-v4+
   short_term: HorizonOutlook;
   medium_term: HorizonOutlook;
   long_term: HorizonOutlook;
@@ -153,6 +158,8 @@ export interface LLMAnalysis {
     llm_is_mocked: boolean;
     prompt_version: string;
     hallucination_flags: string[];
+    hallucination_retry?: boolean; // v4+: bir kez düzeltme denendi mi
+    hallucination_flags_first_attempt?: string[]; // v4+
   };
 }
 

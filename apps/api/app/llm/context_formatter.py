@@ -27,6 +27,7 @@ from app.llm.number_format import (
     format_ratio_percent,
     format_score,
 )
+from app.llm.verdict_formatter import format_verdict_for_prompt
 from app.schemas.context import (
     CompanyContext,
     DataQuality,
@@ -322,6 +323,8 @@ def format_context_for_prompt(context: StructuredAnalysisContext) -> dict:
         ),
         "quality_flags": _fmt_quality_flags(context.quality_flags),
         "real_growth": _fmt_real_growth(context.real_growth),
+        # company-analysis-v4: LLM deterministik hükmü açıklar (ADR-011).
+        "verdict": format_verdict_for_prompt(context.verdict),
     }
 
 
