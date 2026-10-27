@@ -23,6 +23,7 @@ from app.core.logging import get_logger
 from app.financial_engine import formulas
 from app.financial_engine.engine import compute_financial_metrics
 from app.financial_engine.industry_strategy import UNSUPPORTED_INDUSTRY_MESSAGE, is_generic_engine_supported
+from app.financial_engine.industry_strategy import BANK_DCF_NOT_APPLICABLE_MESSAGE, is_bank_industry
 from app.llm.base import LLMProviderError
 from app.llm.hallucination_guard import find_unsupported_numbers
 from app.models.data_source import DataFetchLog
@@ -44,6 +45,8 @@ from app.services import persistence
 from app.services.company_bootstrap import get_or_create_company
 from app.services.context_builder import build_context
 from app.services.data_quality import compute_data_quality
+from app.services.bank_analysis import analyze_bank
+from app.services.data_quality import compute_bank_data_quality
 from app.services.peer_comparison import peer_medians_for_company
 from app.services.provider_bundle import ProviderBundle
 from app.valuation_engine.dcf import compute_dcf
@@ -238,11 +241,22 @@ async def run_refresh(
         for p in annual_period_data
     ]
     unsupported_reason = None if is_generic_engine_supported(company.is_financial_industry) else UNSUPPORTED_INDUSTRY_MESSAGE
+    # Bankalar genel motor yerine banka motoruyla analiz edilir (ADR-014);
+    # sigorta ve GYO desteklenmeyen yolda kalır.
+    is_bank = is_bank_industry(company.is_financial_industry, company.industry.name if company.industry else None)
+    if is_bank:
+        unsupported_reason = None
+    bank_metrics = None
 
     if unsupported_reason:
         metrics = FinancialMetrics(as_of_period="N/A", missing_fields=["unsupported_industry"])
         valuation = ValuationMetrics(missing_fields=["unsupported_industry"])
         scores: ScoreResult = unsupported_score_result(settings.scoring_engine_version, unsupported_reason)
+    elif is_bank:
+        bank = analyze_bank(annual_period_data, quote, candles, analysis_cfg["valuation"]["historical_lookback_years"])
+        bank_metrics, metrics, valuation, scores = bank.bank_metrics, bank.metrics, bank.valuation, bank.scores
+        # Bankada FAVÖK ve serbest nakit akışı anlamsız — seriye yazılmaz.
+        financial_history = [p.model_copy(update={"ebitda": None, "free_cash_flow": None}) for p in financial_history]
     else:
         metrics = compute_financial_metrics(annual_period_data)
         valuation = compute_valuation(
@@ -276,10 +290,12 @@ async def run_refresh(
 
     await persistence.save_metric_snapshot(session, company.id, None, settings.financial_engine_version, metrics.model_dump(mode="json"))
     await persistence.save_valuation_snapshot(session, company.id, settings.valuation_engine_version, valuation.model_dump(mode="json"))
-    await persistence.save_score_snapshot(session, company.id, settings.scoring_engine_version, scores.model_dump(mode="json"))
+    await persistence.save_score_snapshot(session, company.id, scores.engine_version, scores.model_dump(mode="json"))
     await session.commit()
 
     data_quality = compute_data_quality(metrics, stage_results, market_available=quote is not None)
+    if bank_metrics is not None:
+        data_quality = compute_bank_data_quality(bank_metrics, stage_results, market_available=quote is not None)
 
     peer_medians = None
     if not unsupported_reason:
@@ -294,6 +310,7 @@ async def run_refresh(
         peers=peer_medians,
         config=get_verdict_config(),
         unsupported_reason=unsupported_reason,
+        dcf_not_applicable_reason=BANK_DCF_NOT_APPLICABLE_MESSAGE if bank_metrics is not None else None,
     )
 
     company_context = CompanyContext(
@@ -328,6 +345,7 @@ async def run_refresh(
         unsupported_reason=unsupported_reason,
         next_rate_decision_date=_next_rate_decision_date(),
         verdict=verdict,
+        bank_metrics=bank_metrics,
     )
 
     try:
@@ -351,7 +369,7 @@ async def run_refresh(
         ticker=ticker,
         as_of=context.as_of,
         financial_engine_version=settings.financial_engine_version,
-        scoring_engine_version=settings.scoring_engine_version,
+        scoring_engine_version=scores.engine_version,
         valuation_engine_version=settings.valuation_engine_version,
         prompt_version=settings.llm_prompt_version,
         llm_model=providers.llm.model,

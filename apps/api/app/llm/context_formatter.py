@@ -18,6 +18,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 
+from app.llm.bank_context_formatter import format_bank_metrics
 from app.llm.number_format import (
     format_currency,
     format_multiple,
@@ -264,6 +265,8 @@ def format_context_for_prompt(context: StructuredAnalysisContext) -> dict:
         "next_rate_decision_date": (
             _date_tr(context.next_rate_decision_date) if context.next_rate_decision_date else None
         ),
+        # Yalnızca bankalarda (ADR-014); diğer şirketlerin prompt'u değişmez.
+        **({"bank_metrics": format_bank_metrics(context.bank_metrics)} if context.bank_metrics else {}),
     }
 
 

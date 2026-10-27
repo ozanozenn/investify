@@ -4,6 +4,7 @@ import datetime as dt
 
 from pydantic import BaseModel
 
+from app.schemas.bank import BankMetrics
 from app.schemas.context import (
     CompanyContext,
     DataQuality,
@@ -36,6 +37,8 @@ class CompanyAnalysisResponse(BaseModel):
     verdict: Verdict | None = None
     versions: dict[str, str]
     stage_results: dict[str, str] | None = None
+    # Yalnızca bankalarda dolu (ADR-014).
+    bank_metrics: BankMetrics | None = None
 
 
 class CompanySearchResult(BaseModel):
