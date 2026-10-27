@@ -7,10 +7,12 @@ import { useState } from "react";
 import { DcfPanel } from "@/components/dcf-panel";
 import { Disclaimer } from "@/components/disclaimer";
 import { HistoricalComparisonPanel } from "@/components/historical-comparison-panel";
+import { LivePrice } from "@/components/live-price";
 import { NavBar } from "@/components/nav-bar";
 import { NewsPanel } from "@/components/news-panel";
 import { OutlookCard } from "@/components/outlook-card";
 import { PeerComparisonPanel } from "@/components/peer-comparison-panel";
+import { ValuationTile } from "@/components/valuation-tile";
 import { VerdictCard } from "@/components/verdict-card";
 import { Badge, toneForScore } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -18,7 +20,7 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { BigScore, ScoreBar } from "@/components/ui/score-bar";
 import { StatTile } from "@/components/ui/stat-tile";
 import { ApiError, getCompanyAnalysis, refreshCompanyAnalysis } from "@/lib/api";
-import { formatCompact, formatDateTime, formatMultiple, formatNumber, formatPercent, formatRelativeTime } from "@/lib/format";
+import { formatDateTime, formatMultiple, formatNumber, formatPercent, formatRelativeTime } from "@/lib/format";
 import type { CategoryScore } from "@/lib/types";
 
 const MACRO_HELP: Record<string, string> = {
@@ -179,6 +181,8 @@ function CompanyDetail({
             current={valuation.pe}
             historical={valuation.pe_historical_median}
             ratio={valuation.pe_vs_history_ratio}
+            historyLabel={valuation.pe_vs_history_label}
+            historyDiff={valuation.pe_vs_history_diff}
             help="Fiyat/Kazanç oranı — hissenin fiyatı, şirketin hisse başına yıllık kârının kaç katı? Yüksek olması genelde 'pahalı' veya 'yüksek büyüme bekleniyor' anlamına gelir."
           />
           <ValuationTile
@@ -186,6 +190,8 @@ function CompanyDetail({
             current={valuation.pb}
             historical={valuation.pb_historical_median}
             ratio={valuation.pb_vs_history_ratio}
+            historyLabel={valuation.pb_vs_history_label}
+            historyDiff={valuation.pb_vs_history_diff}
             help="Piyasa Değeri/Defter Değeri oranı — hissenin fiyatı, şirketin muhasebe defterindeki özkaynak değerinin kaç katı?"
           />
           <ValuationTile
@@ -193,6 +199,8 @@ function CompanyDetail({
             current={valuation.ev_ebitda}
             historical={valuation.ev_ebitda_historical_median}
             ratio={valuation.ev_ebitda_vs_history_ratio}
+            historyLabel={valuation.ev_ebitda_vs_history_label}
+            historyDiff={valuation.ev_ebitda_vs_history_diff}
             help="Firma Değeri/FAVÖK oranı — borç ve nakit farkını da hesaba katarak şirketin ne kadara 'satın alınabileceğini', ürettiği faaliyet kârına oranlar. Farklı borç seviyesindeki şirketleri kıyaslamak için F/K'dan daha adildir."
           />
         </CardBody>
@@ -410,16 +418,9 @@ function HeaderSection({
         </div>
 
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <div className="text-right">
-            <div className="font-tabular text-2xl font-semibold text-foreground">
-              {market.price ? `${market.price.toFixed(2)} ${market.currency}` : "—"}
-            </div>
-            <div className="mt-0.5 text-xs text-muted">
-              Piyasa Değeri {formatCompact(market.market_cap, market.currency)}
-            </div>
-          </div>
+          <LivePrice ticker={ticker} market={market} />
           <div className="text-right text-xs text-muted">
-            <div>Güncellendi: {formatRelativeTime(market.as_of)}</div>
+            <div>Analiz: {formatRelativeTime(market.as_of)}</div>
             <div className="mt-0.5 flex items-center justify-end gap-1">
               Veri Kalitesi
               <InfoTooltip text="Bu analizin arkasındaki verinin ne kadar tam, güncel ve kapsamlı olduğunun özeti (0-100). Düşükse bazı veri kaynaklarına o an ulaşılamamış olabilir — analiz sonucu eksik veriyle üretilmiş olabilir demektir." />
@@ -457,42 +458,6 @@ function HeaderSection({
         </div>
       )}
     </Card>
-  );
-}
-
-function ValuationTile({
-  label,
-  current,
-  historical,
-  ratio,
-  help,
-}: {
-  label: string;
-  current: number | null;
-  historical: number | null;
-  ratio: number | null;
-  help?: string;
-}) {
-  return (
-    <div className="rounded-md border border-border bg-surface px-3 py-2.5">
-      <div className="flex items-center gap-1 text-[11px] text-muted">
-        {label}
-        {help && <InfoTooltip text={help} />}
-      </div>
-      <div className="mt-1 font-tabular text-lg font-semibold text-foreground">{formatMultiple(current)}</div>
-      <div className="mt-1 text-[11px] text-muted">
-        Tarihsel medyan: <span className="font-tabular">{formatMultiple(historical)}</span>
-      </div>
-      {ratio !== null && (
-        <div className="mt-0.5 flex items-center gap-1 text-[11px]">
-          <span className={ratio > 1.15 ? "text-[var(--negative)]" : ratio < 0.9 ? "text-[var(--positive)]" : "text-muted"}>
-            Tarihsele göre {ratio > 1 ? "+" : ""}
-            {((ratio - 1) * 100).toFixed(0)}%
-          </span>
-          <InfoTooltip text="Şirketin şu anki çarpanı, kendi son yıllardaki tipik (medyan) çarpanından ne kadar farklı. Pozitif = şu an tarihine göre daha pahalı, negatif = daha ucuz." />
-        </div>
-      )}
-    </div>
   );
 }
 

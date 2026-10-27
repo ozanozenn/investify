@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     # --- Redis (cache only in Phase 1) ---
     redis_url: str = Field(default="redis://localhost:63790/0")
     cache_enabled: bool = Field(default=True)
+    quote_cache_ttl_seconds: int = Field(default=60)
 
     # --- Auth ---
     auth_dev_bypass: bool = Field(default=True)

@@ -49,6 +49,7 @@ from app.services.provider_bundle import ProviderBundle
 from app.valuation_engine.dcf import compute_dcf
 from app.valuation_engine.engine import compute_valuation
 from app.verdict_engine.engine import compute_verdict
+from app.verdict_engine.history_labels import label_history_multiples
 
 logger = get_logger(__name__)
 
@@ -253,6 +254,11 @@ async def run_refresh(
             historical_periods=annual_period_data,
             historical_candles=candles,
             lookback_years=analysis_cfg["valuation"]["historical_lookback_years"],
+        )
+        # Değerleme kutucuklarının etiketleri hüküm kartıyla aynı eşiklerden.
+        history_cfg = get_verdict_config()["lenses"]["history"]
+        valuation = label_history_multiples(
+            valuation, cheap_below=history_cfg["cheap_below"], expensive_above=history_cfg["expensive_above"]
         )
         score_inputs = {
             **metrics.model_dump(),

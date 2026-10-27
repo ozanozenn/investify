@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routers import auth, calendar, companies, comparisons, dcf, health, market, news, peers
+from app.api.routers import quote as quote_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, request_id_ctx
 
@@ -61,3 +62,4 @@ app.include_router(comparisons.router)
 app.include_router(news.router)
 app.include_router(market.router)
 app.include_router(calendar.router)
+app.include_router(quote_router.router)

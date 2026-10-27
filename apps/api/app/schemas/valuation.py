@@ -3,6 +3,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 from app.schemas.dcf import DcfResult
+from app.schemas.verdict import PriceLabel
 
 
 class ValuationMetrics(BaseModel):
@@ -24,6 +25,17 @@ class ValuationMetrics(BaseModel):
     pe_vs_history_ratio: float | None = None
     pb_vs_history_ratio: float | None = None
     ev_ebitda_vs_history_ratio: float | None = None
+
+    # Çarpan bazında tarihsel etiket ve fark (oran − 1, kesir: 0.12 == %12
+    # üstünde). Hüküm motorunun `lenses.history` eşikleriyle aynı
+    # (config/verdict.yaml) — sayfa kendi içinde çelişmesin diye. Eski
+    # snapshot'larda yok, bu yüzden opsiyonel.
+    pe_vs_history_label: PriceLabel | None = None
+    pb_vs_history_label: PriceLabel | None = None
+    ev_ebitda_vs_history_label: PriceLabel | None = None
+    pe_vs_history_diff: float | None = None
+    pb_vs_history_diff: float | None = None
+    ev_ebitda_vs_history_diff: float | None = None
 
     history_years_used: int = 0
     missing_fields: list[str] = []

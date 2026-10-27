@@ -9,8 +9,11 @@ apps/api   FastAPI + SQLAlchemy(async) + Alembic + Postgres, single Python servi
 apps/web   Next.js (App Router) + TypeScript + Tailwind, calls apps/api over HTTP
 ```
 
-Redis is used only as a light response/provider cache in Phase 1 (see
-`docs/ROADMAP.md` "CACHE" section) — no Celery in Phase 1: the only
+Redis is used only as a light cache: today it holds the live quote shown on
+page open (`GET /api/companies/{ticker}/quote`, `services/cache.py`, TTL
+`QUOTE_CACHE_TTL_SECONDS`, default 60 s). If Redis is unreachable the API
+logs one warning and runs without a cache — no request fails because of it.
+No Celery in Phase 1: the only
 background-shaped operation is the refresh pipeline, and it runs
 synchronously inside the request handler for `POST
 /companies/{ticker}/refresh` because Phase 1 is single-user and a full
@@ -97,7 +100,10 @@ the latest persisted `AnalysisSnapshot` (+ latest cached market snapshot for
 price/market-cap freshness). Only `POST /companies/{ticker}/refresh` talks
 to providers/LLM. First-time ticker lookup triggers one implicit refresh so
 the demo flow ("type THYAO, get a full screen") works without a separate
-manual step.
+manual step. The one exception is `GET /companies/{ticker}/quote`: it calls
+only `MarketDataProvider.get_quote` (Redis-cached, never creates a
+snapshot) so the header price is fresh on page open; if the provider fails
+it returns the latest snapshot's price marked `stale: true`.
 
 ## Frontend information architecture
 
