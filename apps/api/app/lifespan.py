@@ -15,6 +15,7 @@ from fastapi import FastAPI
 
 from app.core.config import Settings, get_settings
 from app.core.logging import get_logger
+from app.core.security import assert_secure_settings
 from app.db.session import SessionLocal
 from app.models.watchlist import REFRESH_TRIGGER_SCHEDULED
 from app.services.provider_bundle import get_provider_bundle
@@ -41,6 +42,7 @@ def build_watchlist_scheduler(settings: Settings) -> WatchlistScheduler:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
+    assert_secure_settings(settings)
     scheduler: WatchlistScheduler | None = None
     if settings.watchlist_refresh_enabled:
         scheduler = build_watchlist_scheduler(settings)

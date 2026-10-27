@@ -9,6 +9,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
 
+# Geliştirme dışında bu değerlerle açılış reddedilir (core/security.py).
+DEFAULT_JWT_SECRET = "dev-only-insecure-secret-change-me"
+DEFAULT_APP_PASSWORD = "changeme"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
@@ -39,12 +43,14 @@ class Settings(BaseSettings):
     watchlist_refresh_time: str = Field(default="18:30")
 
     # --- Auth ---
-    auth_dev_bypass: bool = Field(default=True)
-    jwt_secret: str = Field(default="dev-only-insecure-secret-change-me")
+    # Varsayılan kapalı (ADR-007): giriş ekranı var, token olmadan API kapalı.
+    # Yerelde istenirse .env'de AUTH_DEV_BYPASS=true (yalnız APP_ENV=development'ta işler).
+    auth_dev_bypass: bool = Field(default=False)
+    jwt_secret: str = Field(default=DEFAULT_JWT_SECRET)
     jwt_algorithm: str = Field(default="HS256")
     jwt_expire_minutes: int = Field(default=60 * 24 * 7)
     app_user_email: str = Field(default="ozanozen4@gmail.com")
-    app_user_password: str = Field(default="changeme")
+    app_user_password: str = Field(default=DEFAULT_APP_PASSWORD)
 
     # --- Providers ---
     evds_api_key: str | None = Field(default=None)

@@ -38,7 +38,9 @@ docker compose up --build
 ```
 
 - API: http://localhost:8000 (docs at `/docs`)
-- Frontend: http://localhost:3000
+- Frontend: http://localhost:3000 — log in with `APP_USER_EMAIL` /
+  `APP_USER_PASSWORD` from `.env` (ADR-007). For local development only, you
+  can skip the login with `AUTH_DEV_BYPASS=true`.
 - Type a ticker (e.g. `THYAO`) into the search box.
 
 Without `docker compose`, see `docs/DEPLOYMENT.md` for running the API and
