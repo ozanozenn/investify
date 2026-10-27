@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     redis_url: str = Field(default="redis://localhost:63790/0")
     cache_enabled: bool = Field(default=True)
 
+    # --- İzleme listesi zamanlanmış yenileme (ADR-013) ---
+    # Günler: "mon-fri" ya da "mon,wed,fri"; saat `timezone` cinsinden "SS:DD".
+    # Testlerde tests/conftest.py WATCHLIST_REFRESH_ENABLED=false yapar.
+    watchlist_refresh_enabled: bool = Field(default=True)
+    watchlist_refresh_days: str = Field(default="mon-fri")
+    watchlist_refresh_time: str = Field(default="18:30")
+
     # --- Auth ---
     auth_dev_bypass: bool = Field(default=True)
     jwt_secret: str = Field(default="dev-only-insecure-secret-change-me")
