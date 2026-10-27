@@ -183,7 +183,12 @@ async def test_bank_skips_generic_quality_flags_but_gets_history_labels(client, 
     body = (await client.post("/api/companies/BNKA/refresh")).json()
 
     assert body["quality_flags"]["flags"] == []
-    assert "unsupported_industry" in body["quality_flags"]["missing_fields"]
+    assert body["quality_flags"]["missing_fields"] == ["not_applicable_bank"]
+    assert "bankalar için uygulanmaz" in body["quality_flags"]["not_applicable_reason"]
+    # Banka "desteklenmeyen sektör" değildir; reel büyüme yine denenir
+    # (burada TÜFE sahte olduğu için hesaplanmaz, tahmin de edilmez).
+    assert "unsupported_industry" not in body["real_growth"]["missing_fields"]
+    assert body["versions"]["financial_engine"] == "bank-v1"
 
     valuation = body["valuation"]
     assert valuation["pb_vs_history_ratio"] is not None

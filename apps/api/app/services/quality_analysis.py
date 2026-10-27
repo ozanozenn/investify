@@ -31,8 +31,22 @@ def compute_quality_analysis(
     annual_periods: list[PeriodData],
     macro: list[MacroSeriesPoint],
     unsupported_reason: str | None = None,
+    not_applicable_reason: str | None = None,
 ) -> tuple[QualityFlagsResult, RealGrowth]:
     config = get_quality_flags_config()
+    cpi = next((m for m in macro if m.code == CPI_SERIES_CODE), None)
+    if not_applicable_reason and not unsupported_reason:
+        # Analiz edilen ama genel kuralların uymadığı şirket türü (banka,
+        # ADR-014): bayrak üretilmez, nedeni yazılır. Reel büyüme (net kârın
+        # enflasyondan arındırılmış büyümesi) bankada da anlamlı, hesaplanır.
+        return (
+            QualityFlagsResult(
+                engine_version=str(config.get("version", "v1")),
+                missing_fields=["not_applicable_bank"],
+                not_applicable_reason=not_applicable_reason,
+            ),
+            compute_real_growth(annual_periods, cpi, int(config["real_growth"]["max_cpi_gap_months"])),
+        )
     if unsupported_reason:
         # Banka/GYO gibi sektörlerde FAVÖK/marj/hasılat bu anlamda yok;
         # genel kurallar yanıltıcı bayrak üretir (bkz. industry_strategy).
@@ -40,7 +54,6 @@ def compute_quality_analysis(
             QualityFlagsResult(engine_version=str(config.get("version", "v1")), missing_fields=["unsupported_industry"]),
             RealGrowth(missing_fields=["unsupported_industry"]),
         )
-    cpi = next((m for m in macro if m.code == CPI_SERIES_CODE), None)
     return (
         compute_quality_flags(annual_periods, config),
         compute_real_growth(annual_periods, cpi, int(config["real_growth"]["max_cpi_gap_months"])),

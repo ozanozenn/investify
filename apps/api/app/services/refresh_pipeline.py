@@ -22,8 +22,12 @@ from app.core.config import Settings, get_analysis_config, get_tcmb_calendar_con
 from app.core.logging import get_logger
 from app.financial_engine import formulas
 from app.financial_engine.engine import compute_financial_metrics
-from app.financial_engine.industry_strategy import UNSUPPORTED_INDUSTRY_MESSAGE, is_generic_engine_supported
-from app.financial_engine.industry_strategy import BANK_DCF_NOT_APPLICABLE_MESSAGE, is_bank_industry
+from app.financial_engine.industry_strategy import (
+    BANK_DCF_NOT_APPLICABLE_MESSAGE,
+    UNSUPPORTED_INDUSTRY_MESSAGE,
+    is_bank_industry,
+    is_generic_engine_supported,
+)
 from app.llm.base import LLMProviderError
 from app.models.data_source import DataFetchLog
 from app.models.enums import FetchStatus
@@ -43,11 +47,10 @@ from app.scoring_engine.engine import compute_score, unsupported_score_result
 from app.services import persistence
 from app.services.company_bootstrap import get_or_create_company
 from app.services.context_builder import build_context
-from app.services.data_quality import compute_data_quality
-from app.services.llm_analysis import analyze_with_hallucination_retry
 from app.services.bank_analysis import analyze_bank
-from app.services.data_quality import compute_bank_data_quality
+from app.services.data_quality import compute_bank_data_quality, compute_data_quality
 from app.services.financial_sources import financial_source_warnings
+from app.services.llm_analysis import analyze_with_hallucination_retry
 from app.services.peer_comparison import peer_medians_for_company
 from app.services.provider_bundle import ProviderBundle
 from app.services.quality_analysis import compute_quality_analysis
@@ -302,7 +305,8 @@ async def run_refresh(
             shares_outstanding=quote.shares_outstanding if quote else None,
         )
 
-    await persistence.save_metric_snapshot(session, company.id, None, settings.financial_engine_version, metrics.model_dump(mode="json"))
+    financial_engine_version = bank_metrics.engine_version if bank_metrics is not None else settings.financial_engine_version
+    await persistence.save_metric_snapshot(session, company.id, None, financial_engine_version, metrics.model_dump(mode="json"))
     await persistence.save_valuation_snapshot(session, company.id, settings.valuation_engine_version, valuation.model_dump(mode="json"))
     await persistence.save_score_snapshot(session, company.id, scores.engine_version, scores.model_dump(mode="json"))
     await session.commit()
@@ -310,7 +314,10 @@ async def run_refresh(
     data_quality = compute_data_quality(metrics, stage_results, market_available=quote is not None)
     if bank_metrics is not None:
         data_quality = compute_bank_data_quality(bank_metrics, stage_results, market_available=quote is not None)
-    data_quality.warnings.extend(financial_source_warnings(raw_periods))  # ADR-015
+    if bank_metrics is None:
+        # İş Yatırım'ın sanayi şablonu (XI_29) bankayı kapsamaz; bankada
+        # "veri vermedi" uyarısı her yenilemede tekrarlanan gürültü olurdu.
+        data_quality.warnings.extend(financial_source_warnings(raw_periods))  # ADR-015
 
     peer_medians = None
     if not unsupported_reason:
@@ -368,7 +375,8 @@ async def run_refresh(
     context.quality_flags, context.real_growth = compute_quality_analysis(
         annual_period_data,
         macro_points,
-        unsupported_reason or (BANK_QUALITY_FLAGS_NOT_APPLICABLE if bank_metrics is not None else None),
+        unsupported_reason,
+        not_applicable_reason=BANK_QUALITY_FLAGS_NOT_APPLICABLE if bank_metrics is not None else None,
     )
 
     try:
@@ -391,7 +399,8 @@ async def run_refresh(
         company_id=company.id,
         ticker=ticker,
         as_of=context.as_of,
-        financial_engine_version=settings.financial_engine_version,
+        # Bankada asıl motor banka motorudur (ADR-005: yeniden üretilebilirlik).
+        financial_engine_version=financial_engine_version,
         scoring_engine_version=scores.engine_version,
         valuation_engine_version=settings.valuation_engine_version,
         prompt_version=settings.llm_prompt_version,

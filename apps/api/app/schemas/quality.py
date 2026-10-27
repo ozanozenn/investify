@@ -55,6 +55,8 @@ class QualityFlagsResult(BaseModel):
     passed_checks: list[str] = []
     not_evaluated: list[UnevaluatedQualityCheck] = []
     missing_fields: list[str] = []
+    # Kurallar bu şirket türüne uymuyorsa (ör. banka) neden; eski snapshot'larda yok.
+    not_applicable_reason: str | None = None
 
 
 class RealGrowth(BaseModel):

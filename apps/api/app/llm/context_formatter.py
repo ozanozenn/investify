@@ -272,6 +272,7 @@ def _fmt_quality_flags(q: QualityFlagsResult | None) -> dict | None:
         "passed_checks": q.passed_checks,
         "not_evaluated": [{"name": c.name, "reason": c.reason} for c in q.not_evaluated],
         "missing_fields": q.missing_fields,
+        "not_applicable_reason": q.not_applicable_reason,
     }
 
 
