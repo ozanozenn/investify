@@ -216,3 +216,18 @@ def test_correction_instructions_list_each_flagged_literal_once():
     assert "«42.7», «%88,8»" in text
     assert text.count("42.7") == 1
     assert "context" in text
+
+
+def test_small_percent_quoted_exactly_as_prompt_shows_it_is_not_flagged():
+    # Code review bulgusu: 0,0175 prompt'a "%1,8" olarak gider; ham değere
+    # göre yuvarlama hatası %2,9 (> %2 tolerans). LLM'in prompt'ta gördüğü
+    # biçimi aynen kullanması halüsinasyon sayılmamalı.
+    ctx = _context()
+    ctx.metrics = FinancialMetrics(as_of_period="2025", net_margin=0.0175, ebitda_margin=0.0123)
+    assert find_unsupported_numbers(ctx, _result("Net kâr marjı %1,8, FAVÖK marjı %1,2.")) == []
+
+
+def test_small_percent_not_in_prompt_is_still_flagged():
+    ctx = _context()
+    ctx.metrics = FinancialMetrics(as_of_period="2025", net_margin=0.0175)
+    assert len(find_unsupported_numbers(ctx, _result("Net kâr marjı %1,4 oldu."))) == 1

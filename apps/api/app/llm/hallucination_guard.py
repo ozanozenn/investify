@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import re
 
+from app.llm.context_formatter import format_context_for_prompt
 from app.llm.number_format import extract_number_candidates
-from app.llm.verdict_formatter import verdict_text_fields
 from app.schemas.context import StructuredAnalysisContext
 from app.schemas.llm_analysis import LLMAnalysisResult
 
@@ -65,17 +65,27 @@ def _collect_context_numbers(context: StructuredAnalysisContext) -> list[float]:
             for v in obj:
                 walk(v)
 
-    # Hüküm (ADR-011) v4'ten beri prompt'ta, ama ham oranları (`lens.value`,
-    # `agreement`) değil, yalnızca Türkçe metinleri gidiyor
-    # (`verdict_formatter.py`). O yüzden hükmün sayısal alanları değil,
-    # LLM'in gerçekten gördüğü başlık/gerekçe metinlerindeki sayılar
-    # "context'te var" sayılır (ör. "medyanının %12 üstünde", "3 değerleme
-    # yönteminden 2 tanesi").
+    # Ham değerler (hüküm hariç: ham oranları prompt'a hiç gitmiyor).
     walk(context.model_dump(mode="json", exclude={"verdict"}))
-    if context.verdict is not None:
-        for text in verdict_text_fields(context.verdict):
-            for _literal, candidates in extract_number_candidates(text):
+
+    # LLM'in prompt'ta GERÇEKTEN gördüğü biçimlendirilmiş metinlerdeki sayılar
+    # da "context'te var" sayılır. Gerekçe: küçük yüzdeler tek ondalıkla
+    # yazılır (0,0175 → "%1,8"); ham değere göre yuvarlama farkı %2
+    # toleransı aşar ve LLM'in birebir aktardığı doğru rakam yanlışlıkla
+    # bayraklanırdı (ROA, reel büyüme, kalite bayrağı marjları). Hükmün
+    # başlık/gerekçe metinleri de bu yolla kapsanır.
+    def walk_text(obj) -> None:
+        if isinstance(obj, str):
+            for _literal, candidates in extract_number_candidates(obj):
                 numbers.extend(candidates)
+        elif isinstance(obj, dict):
+            for v in obj.values():
+                walk_text(v)
+        elif isinstance(obj, list):
+            for v in obj:
+                walk_text(v)
+
+    walk_text(format_context_for_prompt(context))
     return numbers
 
 

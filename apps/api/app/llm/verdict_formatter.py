@@ -26,12 +26,6 @@ DEMO_SIGNAL_NOTE = (
 )
 
 
-def verdict_text_fields(verdict: Verdict) -> list[str]:
-    """Hükmün LLM'e giden serbest metinleri — guard bunlardaki sayıları
-    "context'te var" sayar."""
-    return [verdict.headline] + [lens.reason for lens in verdict.lenses]
-
-
 def format_verdict_for_prompt(verdict: Verdict | None) -> dict | None:
     if verdict is None:
         return None
