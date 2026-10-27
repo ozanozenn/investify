@@ -5,6 +5,7 @@ import statistics
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.financial_engine.industry_strategy import is_bank_industry
 from app.models.company import Company, Industry, Sector, Ticker
 from app.models.snapshots import AnalysisSnapshot
 from app.schemas.peer import PeerCompanyMetric, PeerComparisonResult
@@ -112,9 +113,12 @@ async def _find_peer_candidates(
 
         # Step 2: fall back to the whole sector (any industry under it,
         # excluding the subject's own company) if industry yielded nothing.
-        if not candidate_companies:
+        # Bankalar yalnızca bankalarla karşılaştırılır (ADR-014): banka için
+        # sektör geri düşüşü yok, banka olmayan için sektörden bankalar çıkarılır.
+        subject_is_bank = is_bank_industry(subject.is_financial_industry, industry_name)
+        if not candidate_companies and not subject_is_bank:
             result = await session.execute(
-                select(Company)
+                select(Company, Industry.name)
                 .join(Industry, Company.industry_id == Industry.id)
                 .where(
                     Industry.sector_id == subject_industry.sector_id,
@@ -122,7 +126,11 @@ async def _find_peer_candidates(
                     Company.is_financial_industry == subject.is_financial_industry,
                 )
             )
-            sector_candidates = result.scalars().all()
+            sector_candidates = [
+                company
+                for company, candidate_industry in result.all()
+                if not is_bank_industry(company.is_financial_industry, candidate_industry)
+            ]
             if sector_candidates:
                 latest = await _latest_snapshots_by_company(session, [c.id for c in sector_candidates])
                 with_data = [c for c in sector_candidates if c.id in latest]

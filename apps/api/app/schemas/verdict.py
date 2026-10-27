@@ -20,6 +20,9 @@ class VerdictLens(BaseModel):
     verdict: PriceLabel | None
     value: float | None
     reason: str
+    # Yöntem bu şirket türüne hiç uygulanmıyor (ör. bankada DCF, ADR-014):
+    # veri eksikliği değil, oy vermez. Eski snapshot'larda yok → False.
+    not_applicable: bool = False
 
 
 class Verdict(BaseModel):
