@@ -19,9 +19,9 @@ from __future__ import annotations
 
 UNSUPPORTED_INDUSTRY_MESSAGE = (
     "Bu şirketin sektörü için özel finansal analiz henüz desteklenmiyor "
-    "(bankalar, sigorta şirketleri ve GYO'lar farklı bir finansal tablo "
-    "yapısı kullanır). Yanıltıcı bir skor göstermek yerine, genel sanayi "
-    "skorlaması bilinçli olarak gösterilmiyor."
+    "(sigorta şirketleri ve GYO'lar farklı bir finansal tablo yapısı "
+    "kullanır; bankalar kendi motoruyla analiz edilir). Yanıltıcı bir skor "
+    "göstermek yerine, genel sanayi skorlaması bilinçli olarak gösterilmiyor."
 )
 
 

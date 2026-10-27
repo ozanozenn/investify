@@ -161,6 +161,8 @@ function CompanyDetail({
 
       <SectionLabel>Neden? — Skor ve değerleme</SectionLabel>
 
+      {/* Desteklenmeyen sektörde skor hesaplanmaz; "0/100" göstermek yanıltır. */}
+      {!unsupported_reason && (
       <Card>
         <CardHeader title="Skor Kartı" subtitle={`Deterministik skorlama motoru ${versions.scoring_engine}`} />
         <CardBody className="grid gap-4 sm:grid-cols-[auto_1fr]">
@@ -181,6 +183,7 @@ function CompanyDetail({
           </div>
         </CardBody>
       </Card>
+      )}
 
       {data.quality_flags && <QualityFlagsCard qualityFlags={data.quality_flags} />}
 
