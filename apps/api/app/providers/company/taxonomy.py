@@ -27,9 +27,15 @@ matching improves for the industries listed here.
 
 from __future__ import annotations
 
-# yfinance `industry` string (case-insensitive) -> canonical (sector, industry).
-# Populated from the seed set's own industries plus other industries
-# realistically expected among BIST large/liquid names.
+import re
+
+# yfinance `industry` string -> canonical (sector, industry). Matching is
+# case- and punctuation-insensitive (see `_key`): "Banks—Regional",
+# "Banks - Regional" and yfinance's own de-punctuated "Banks Regional" are
+# the same key. Populated from the seed set's own industries plus other
+# industries realistically expected among BIST names; the ADR-015 block
+# below uses only industry names that appear in yfinance's
+# `yfinance.const.SECTOR_INDUSTY_MAPPING` (checked by tests).
 _INDUSTRY_TRANSLATIONS: dict[str, tuple[str, str]] = {
     "airlines": ("Ulaştırma", "Havayolu"),
     "aerospace & defense": ("Sanayi", "Savunma Elektroniği"),
@@ -54,7 +60,9 @@ _INDUSTRY_TRANSLATIONS: dict[str, tuple[str, str]] = {
     "discount stores": ("Perakende", "Perakende"),
     "telecom services": ("Telekomünikasyon", "Telekomünikasyon"),
     "conglomerates": ("Holding", "Holding"),
-    "building materials": ("Sanayi", "Cam"),
+    # Mostly cement producers on BIST (glass has no Yahoo industry of its
+    # own); was "Cam", which made every cement company a peer of SISE.
+    "building materials": ("Sanayi", "Çimento ve Yapı Malzemeleri"),
     "gold": ("Madencilik", "Madencilik"),
     "copper": ("Madencilik", "Madencilik"),
     "other industrial metals & mining": ("Madencilik", "Madencilik"),
@@ -95,6 +103,88 @@ _INDUSTRY_TRANSLATIONS: dict[str, tuple[str, str]] = {
     "railroads": ("Ulaştırma", "Demiryolu"),
     "trucking": ("Ulaştırma", "Kara Taşımacılığı"),
     "engineering & construction": ("Sanayi", "İnşaat"),
+    # --- ADR-015 additions (Yahoo display names; variants via `_key`) ---
+    # Basic Materials / Energy
+    "lumber & wood production": ("Sanayi", "Orman Ürünleri"),
+    "aluminum": ("Sanayi", "Alüminyum"),
+    "silver": ("Madencilik", "Madencilik"),
+    "other precious metals & mining": ("Madencilik", "Madencilik"),
+    "coking coal": ("Madencilik", "Madencilik"),
+    "thermal coal": ("Madencilik", "Madencilik"),
+    "oil & gas integrated": ("Enerji", "Petrol ve Doğalgaz"),
+    "oil & gas e&p": ("Enerji", "Petrol ve Doğalgaz"),
+    "oil & gas midstream": ("Enerji", "Petrol ve Doğalgaz"),
+    "oil & gas drilling": ("Enerji", "Petrol ve Doğalgaz"),
+    "oil & gas equipment & services": ("Enerji", "Petrol ve Doğalgaz"),
+    "solar": ("Enerji", "Güneş Enerjisi Ekipmanları"),
+    # Utilities (energy generation / distribution)
+    "utilities - diversified": ("Enerji", "Elektrik Üretim"),
+    "utilities - regulated electric": ("Enerji", "Elektrik Dağıtım"),
+    "utilities - regulated gas": ("Enerji", "Doğalgaz Dağıtım"),
+    # Consumer Cyclical (retail, textiles, construction, tourism, packaging)
+    "apparel retail": ("Perakende", "Giyim Perakendesi"),
+    "department stores": ("Perakende", "Perakende"),
+    "specialty retail": ("Perakende", "Perakende"),
+    "home improvement retail": ("Perakende", "Perakende"),
+    "internet retail": ("Perakende", "Perakende"),
+    "auto & truck dealerships": ("Perakende", "Otomotiv Ticareti"),
+    "footwear & accessories": ("Sanayi", "Tekstil"),
+    "packaging & containers": ("Sanayi", "Ambalaj"),
+    "residential construction": ("Sanayi", "İnşaat"),
+    "travel services": ("Hizmetler", "Turizm ve Eğlence"),
+    "restaurants": ("Hizmetler", "Restoran"),
+    # Consumer Defensive (food, beverages, education)
+    "beverages - wineries & distilleries": ("Gıda ve İçecek", "İçecek"),
+    "farm products": ("Gıda ve İçecek", "Gıda"),
+    "food distribution": ("Gıda ve İçecek", "Gıda"),
+    "education & training services": ("Hizmetler", "Eğitim"),
+    # Communication Services / Technology
+    "entertainment": ("Hizmetler", "Medya"),
+    "internet content & information": ("Teknoloji", "İnternet Hizmetleri"),
+    "information technology services": ("Teknoloji", "Bilişim Hizmetleri"),
+    "communication equipment": ("Teknoloji", "Haberleşme Ekipmanları"),
+    "computer hardware": ("Teknoloji", "Bilgisayar Donanımı"),
+    "electronics & computer distribution": ("Teknoloji", "Bilişim Dağıtımı"),
+    "scientific & technical instruments": ("Teknoloji", "Elektronik"),
+    "semiconductor equipment & materials": ("Teknoloji", "Elektronik"),
+    "consumer electronics": ("Sanayi", "Dayanıklı Tüketim"),
+    # Financial Services (insurance, brokers, leasing/factoring, holdings)
+    "insurance - property & casualty": ("Finans", "Sigorta"),
+    "insurance - reinsurance": ("Finans", "Sigorta"),
+    "insurance - specialty": ("Finans", "Sigorta"),
+    "insurance brokers": ("Finans", "Sigorta"),
+    "capital markets": ("Finans", "Aracı Kurum"),
+    "asset management": ("Finans", "Varlık Yönetimi"),
+    "credit services": ("Finans", "Finansman ve Faktoring"),
+    "mortgage finance": ("Finans", "Finansman ve Faktoring"),
+    "financial conglomerates": ("Holding", "Holding"),
+    # Healthcare
+    "medical care facilities": ("Sağlık", "Hastane ve Sağlık Hizmetleri"),
+    "medical instruments & supplies": ("Sağlık", "Medikal Cihaz"),
+    "medical distribution": ("Sağlık", "Medikal Dağıtım"),
+    # Industrials (defense/aerospace and engineering already above)
+    "airports & air services": ("Ulaştırma", "Havalimanı ve Yer Hizmetleri"),
+    "marine shipping": ("Ulaştırma", "Denizcilik"),
+    "integrated freight & logistics": ("Ulaştırma", "Lojistik"),
+    "building products & equipment": ("Sanayi", "Yapı Ürünleri"),
+    "electrical equipment & parts": ("Sanayi", "Elektrikli Ekipman"),
+    "farm & heavy construction machinery": ("Sanayi", "Makine"),
+    "specialty industrial machinery": ("Sanayi", "Makine"),
+    "metal fabrication": ("Sanayi", "Metal Eşya"),
+    "industrial distribution": ("Hizmetler", "Endüstriyel Dağıtım"),
+    "infrastructure operations": ("Hizmetler", "Altyapı İşletmeciliği"),
+    "waste management": ("Hizmetler", "Çevre Hizmetleri"),
+    "pollution & treatment controls": ("Hizmetler", "Çevre Hizmetleri"),
+    "security & protection services": ("Hizmetler", "Güvenlik Hizmetleri"),
+    # Real Estate (BIST real-estate companies are overwhelmingly GYOs)
+    "real estate - development": ("Gayrimenkul", "GYO"),
+    "real estate services": ("Gayrimenkul", "Gayrimenkul Hizmetleri"),
+    "reit - retail": ("Gayrimenkul", "GYO"),
+    "reit - office": ("Gayrimenkul", "GYO"),
+    "reit - residential": ("Gayrimenkul", "GYO"),
+    "reit - industrial": ("Gayrimenkul", "GYO"),
+    "reit - hotel & motel": ("Gayrimenkul", "GYO"),
+    "reit - specialty": ("Gayrimenkul", "GYO"),
 }
 
 # yfinance `sector` string (case-insensitive) -> canonical Turkish sector,
@@ -117,6 +207,16 @@ _SECTOR_TRANSLATIONS: dict[str, str] = {
 }
 
 
+def _key(text: str) -> str:
+    """Case/punctuation-insensitive lookup key: "Oil & Gas E&P",
+    "Banks—Regional" and "Banks - Regional" -> "oil gas e p", "banks regional"."""
+    return " ".join(re.findall(r"\w+", text.lower()))
+
+
+_INDUSTRY_LOOKUP: dict[str, tuple[str, str]] = {_key(k): v for k, v in _INDUSTRY_TRANSLATIONS.items()}
+_SECTOR_LOOKUP: dict[str, str] = {_key(k): v for k, v in _SECTOR_TRANSLATIONS.items()}
+
+
 def normalize_sector_industry(sector: str | None, industry: str | None) -> tuple[str, str]:
     """Best-effort translation into the canonical (Turkish) taxonomy used by
     `providers/company/seed.py`. Falls through to the original strings
@@ -124,12 +224,12 @@ def normalize_sector_industry(sector: str | None, industry: str | None) -> tuple
     sector = sector or "Diğer"
     industry = industry or sector
 
-    industry_key = industry.strip().lower()
-    if industry_key in _INDUSTRY_TRANSLATIONS:
-        return _INDUSTRY_TRANSLATIONS[industry_key]
+    industry_key = _key(industry)
+    if industry_key in _INDUSTRY_LOOKUP:
+        return _INDUSTRY_LOOKUP[industry_key]
 
-    sector_key = sector.strip().lower()
-    if sector_key in _SECTOR_TRANSLATIONS:
-        return _SECTOR_TRANSLATIONS[sector_key], industry
+    sector_key = _key(sector)
+    if sector_key in _SECTOR_LOOKUP:
+        return _SECTOR_LOOKUP[sector_key], industry
 
     return sector, industry
