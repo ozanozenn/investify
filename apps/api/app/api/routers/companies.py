@@ -75,6 +75,7 @@ def _snapshot_to_response(snapshot: AnalysisSnapshot, stage_results: dict[str, s
             "llm_model": snapshot.llm_model,
         },
         stage_results=stage_results,
+        bank_metrics=ctx.get("bank_metrics"),
     )
 
 

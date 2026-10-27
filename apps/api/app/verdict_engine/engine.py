@@ -116,8 +116,12 @@ def _peers_lens(valuation: ValuationMetrics, peers: PeerMedians | None, cfg: dic
     )
 
 
-def _dcf_lens(valuation: ValuationMetrics, cfg: dict) -> VerdictLens:
+def _dcf_lens(valuation: ValuationMetrics, cfg: dict, not_applicable_reason: str | None = None) -> VerdictLens:
     label = "İndirgenmiş nakit akışına (DCF) göre"
+    if not_applicable_reason:
+        # Bankalar (ADR-014): yöntem uygulanmaz, oy vermez, eksik veri sayılmaz.
+        return VerdictLens(key="dcf", label=label, verdict=None, value=None,
+                           reason=not_applicable_reason, not_applicable=True)
     upside = valuation.dcf.base.upside_vs_current_price if valuation.dcf else None
     if upside is None:
         return VerdictLens(key="dcf", label=label, verdict=None, value=None,
@@ -163,6 +167,7 @@ def compute_verdict(
     peers: PeerMedians | None,
     config: dict,
     unsupported_reason: str | None = None,
+    dcf_not_applicable_reason: str | None = None,
 ) -> Verdict:
     version = config["version"]
     signal_enabled = bool(config["signal"]["enabled"])
@@ -179,9 +184,9 @@ def compute_verdict(
     lenses = [
         _history_lens(valuation, lens_cfg["history"]),
         _peers_lens(valuation, peers, lens_cfg["peers"]),
-        _dcf_lens(valuation, lens_cfg["dcf"]),
+        _dcf_lens(valuation, lens_cfg["dcf"], dcf_not_applicable_reason),
     ]
-    missing = [f"verdict_lens_{lens.key}" for lens in lenses if lens.verdict is None]
+    missing = [f"verdict_lens_{lens.key}" for lens in lenses if lens.verdict is None and not lens.not_applicable]
     votes = [lens.verdict for lens in lenses if lens.verdict]
 
     # Gerçek çoğunluk: yarıdan fazlası aynı şeyi demeli. Ortalama alınmaz —

@@ -33,6 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.core.security import require_user
+from app.financial_engine.industry_strategy import BANK_DCF_NOT_APPLICABLE_MESSAGE
 from app.models.enums import CanonicalField as CF
 from app.models.snapshots import AnalysisSnapshot
 from app.schemas.dcf import DcfAssumptions, DcfResult
@@ -131,6 +132,9 @@ async def get_company_dcf(
         raise HTTPException(status_code=404, detail=f"{ticker} için henüz bir analiz yok — önce bir refresh çalıştırın.")
 
     ctx = snapshot.context_json
+    if ctx.get("bank_metrics") is not None:
+        # ADR-014: bankada serbest nakit akışı anlamsız; DCF üretilmez.
+        raise HTTPException(status_code=422, detail=BANK_DCF_NOT_APPLICABLE_MESSAGE)
     market = ctx.get("market") or {}
     metrics = ctx.get("metrics") or {}
 

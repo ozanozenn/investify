@@ -4,6 +4,7 @@ import datetime as dt
 
 from pydantic import BaseModel
 
+from app.schemas.bank import BankMetrics
 from app.schemas.financial import FinancialHistoryPoint, FinancialMetrics
 from app.schemas.quality import QualityFlagsResult, RealGrowth
 from app.schemas.scoring import ScoreResult
@@ -85,3 +86,6 @@ class StructuredAnalysisContext(BaseModel):
     # ADR-016'dan önceki snapshot'larda yok — opsiyonel.
     quality_flags: QualityFlagsResult | None = None
     real_growth: RealGrowth | None = None
+    # Yalnızca bankalarda dolu (ADR-014); eski snapshot'larda ve banka
+    # olmayan şirketlerde None.
+    bank_metrics: BankMetrics | None = None

@@ -18,6 +18,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 
+from app.llm.bank_context_formatter import format_bank_metrics
 from app.llm.number_format import (
     format_currency,
     format_multiple,
@@ -325,6 +326,8 @@ def format_context_for_prompt(context: StructuredAnalysisContext) -> dict:
         "real_growth": _fmt_real_growth(context.real_growth),
         # company-analysis-v4: LLM deterministik hükmü açıklar (ADR-011).
         "verdict": format_verdict_for_prompt(context.verdict),
+        # Yalnızca bankalarda (ADR-014); diğer şirketlerin prompt'u değişmez.
+        **({"bank_metrics": format_bank_metrics(context.bank_metrics)} if context.bank_metrics else {}),
     }
 
 
