@@ -215,7 +215,11 @@ function CompanyDetail({
             ratio={valuation.ev_ebitda_vs_history_ratio}
             historyLabel={valuation.ev_ebitda_vs_history_label}
             historyDiff={valuation.ev_ebitda_vs_history_diff}
-            help="Firma Değeri/FAVÖK oranı — borç ve nakit farkını da hesaba katarak şirketin ne kadara 'satın alınabileceğini', ürettiği faaliyet kârına oranlar. Farklı borç seviyesindeki şirketleri kıyaslamak için F/K'dan daha adildir."
+            help={
+              bank
+                ? "Bankalarda FD/FAVÖK uygulanmaz: mevduat ve krediler bankanın asıl işidir, 'borç' gibi düşülemez; FAVÖK de anlamlı değildir. Bankalar PD/DD ve F/K ile değerlenir."
+                : "Firma Değeri/FAVÖK oranı — borç ve nakit farkını da hesaba katarak şirketin ne kadara 'satın alınabileceğini', ürettiği faaliyet kârına oranlar. Farklı borç seviyesindeki şirketleri kıyaslamak için F/K'dan daha adildir."
+            }
           />
         </CardBody>
       </Card>
