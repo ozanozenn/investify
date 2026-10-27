@@ -7,6 +7,7 @@ import { useState } from "react";
 import { DcfPanel } from "@/components/dcf-panel";
 import { Disclaimer } from "@/components/disclaimer";
 import { HistoricalComparisonPanel } from "@/components/historical-comparison-panel";
+import { LivePrice } from "@/components/live-price";
 import { NavBar } from "@/components/nav-bar";
 import { NewsPanel } from "@/components/news-panel";
 import { OutlookCard } from "@/components/outlook-card";
@@ -19,7 +20,7 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { BigScore, ScoreBar } from "@/components/ui/score-bar";
 import { StatTile } from "@/components/ui/stat-tile";
 import { ApiError, getCompanyAnalysis, refreshCompanyAnalysis } from "@/lib/api";
-import { formatCompact, formatDateTime, formatMultiple, formatNumber, formatPercent, formatRelativeTime } from "@/lib/format";
+import { formatDateTime, formatMultiple, formatNumber, formatPercent, formatRelativeTime } from "@/lib/format";
 import type { CategoryScore } from "@/lib/types";
 
 const MACRO_HELP: Record<string, string> = {
@@ -417,16 +418,9 @@ function HeaderSection({
         </div>
 
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <div className="text-right">
-            <div className="font-tabular text-2xl font-semibold text-foreground">
-              {market.price ? `${market.price.toFixed(2)} ${market.currency}` : "—"}
-            </div>
-            <div className="mt-0.5 text-xs text-muted">
-              Piyasa Değeri {formatCompact(market.market_cap, market.currency)}
-            </div>
-          </div>
+          <LivePrice ticker={ticker} market={market} />
           <div className="text-right text-xs text-muted">
-            <div>Güncellendi: {formatRelativeTime(market.as_of)}</div>
+            <div>Analiz: {formatRelativeTime(market.as_of)}</div>
             <div className="mt-0.5 flex items-center justify-end gap-1">
               Veri Kalitesi
               <InfoTooltip text="Bu analizin arkasındaki verinin ne kadar tam, güncel ve kapsamlı olduğunun özeti (0-100). Düşükse bazı veri kaynaklarına o an ulaşılamamış olabilir — analiz sonucu eksik veriyle üretilmiş olabilir demektir." />
