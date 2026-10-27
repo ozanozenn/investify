@@ -47,5 +47,5 @@ AL/TUT/SAT sinyalini deneme amaçlı görmek istedi.
   istisnasında. Kalıcı olursa `MAIN_ROADMAP.md` madde 1 güncellenmeli.
 - Sektör yöntemi, aynı sektörden başka şirketler yenilendikçe güçlenir;
   ilk aşamada çoğu şirkette "veri yok" görünür.
-- Hüküm henüz LLM context'ine girmiyor; LLM'in hükmü açıklaması bir sonraki
-  prompt sürümünün (v4) işi.
+- Hüküm prompt v4'ten beri LLM context'inde; LLM onu yalnızca açıklar,
+  demo sinyali tekrar etmez (ADR-003).
