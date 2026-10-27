@@ -28,18 +28,19 @@ Definition of Done: [docs/PHASE_1_SCOPE.md](PHASE_1_SCOPE.md).
   messages, and config-driven labels. All future features ship in Turkish
   from the first draft (no English-then-translate).
 
-## Phase 3 — Sector-specific engines (deferred — user decision 2026-09-17)
+## Phase 3 — Sector-specific engines (banks done 2026-10-27; insurance/GYO/holding not started)
 
 Explicitly skipped for now: the user wants to keep the system's
 technical-metric surface minimal at its current scope and revisit
 whether more sector-specific metrics are worth the added complexity
 later, rather than build it speculatively now.
 
-- Bank-specific financial engine (NIM, loan/deposit growth, NPL, CAR,
-  cost/income) — currently explicitly refused with an "unsupported"
-  state (`financial_engine/industry_strategy.py`) rather than a wrong
-  generic score. Given how much of BIST's market cap is banks, this
-  would likely be the highest-value item if/when this phase is revisited.
+- ✅ **Bank engine** (2026-10-27, ADR-014) — `financial_engine/bank_engine.py`,
+  `config/bank_scoring.yaml`: ROE, ROA, NIM proxy, NII/net income growth,
+  equity/assets, cost/income (approx.), P/B and P/E vs history; DCF not
+  applied. yfinance bank row names verified only against the installed
+  package — run `scripts/verify_bank_fields.py` on a machine with internet.
+  Insurance and GYO remain "unsupported".
 - REIT/GYO (NAV, NAV discount, occupancy) and Holding (SOTP, holding
   discount) engines.
 
@@ -126,9 +127,11 @@ kadar extra feature eklemeyeceğiz" instruction.
   convention sign-before-percent) instead of a naive per-character-group
   regex. Live-verified against real Gemini output: 0 flags on a
   well-formed analysis, correctly flags an injected sign-flip.
-- Not done: making `hallucination_flags` blocking/retry-triggering
-  (still advisory-only/logged) or surfacing them in the frontend UI —
-  both noted as candidate follow-ups, not requested yet.
+- ✅ **Prompt v4 + one corrective retry** (2026-10-27, ADR-003) — the LLM
+  explains the deterministic verdict; slimmer output schema (no LLM
+  `confidence`); if the guard flags numbers the LLM is called once more
+  with the list; remaining flags are shown as a warning in the UI.
+  Still advisory (never blocks persisting).
 
 ## Phase 5+ — Advanced
 

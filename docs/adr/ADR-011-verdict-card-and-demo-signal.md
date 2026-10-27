@@ -27,7 +27,8 @@ AL/TUT/SAT sinyalini deneme amaçlı görmek istedi.
   kapanır; kapalıyken arayüz sinyal hücresini hiç göstermez.
 - Veri olmayan yöntem oy vermez, `missing_fields`'e yazılır; tahmin edilmez.
 - Hüküm refresh sırasında hesaplanır ve snapshot'a yazılır (ADR-005).
-  Banka/GYO gibi desteklenmeyen sektörlerde hüküm üretilmez.
+  Bankalarda DCF yöntemi "uygulanmaz" olarak gösterilir ve oy vermez
+  (ADR-014); sigorta/GYO gibi desteklenmeyen sektörlerde hüküm üretilmez.
 - Şirket sayfası katmanlı: Hüküm → Neden? (skor, değerleme, DCF,
   karşılaştırma) → Detaylar → Bağlam (KAP, haber, makro).
 - LLM'in `confidence` alanı arayüzde gösterilmez.

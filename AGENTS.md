@@ -14,7 +14,7 @@ motorundan gelir ve tek ayarla kapanır (ADR-011); LLM asla sinyal vermez.
 ## Stack
 FastAPI + SQLAlchemy 2.0 (async) + Alembic + PostgreSQL (`apps/api`) ·
 Next.js 15 (App Router) + React 19 + TypeScript + Tailwind (`apps/web`) ·
-Docker Compose orkestrasyon · Redis (hafif önbellek, Phase 1 kapsamında).
+Docker Compose orkestrasyon · Redis (güncel fiyat önbelleği; erişilemezse önbelleksiz çalışır).
 
 ## Komutlar
 | Amaç        | Komut              |
@@ -34,7 +34,7 @@ Docker Compose orkestrasyon · Redis (hafif önbellek, Phase 1 kapsamında).
 ## Mimari haritası
 <!-- Klasör → sorumluluk. Sadece üst seviye; detay docs/ARCHITECTURE.md -->
 - `apps/api/app/` — backend; import yönü `routers → services → {providers,
-  financial_engine, scoring_engine, valuation_engine, llm} → models`
+  financial_engine, scoring_engine, valuation_engine, verdict_engine, llm} → models`
   (ADR-001). Motorlar (`*_engine/`) saf fonksiyonlardır, I/O yapmaz.
 - `apps/web/app/`, `apps/web/components/` — Next.js App Router sayfaları ve
   bileşenler; frontend asla finansal hesaplama yapmaz, API yanıtını olduğu
