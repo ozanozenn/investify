@@ -54,3 +54,7 @@ veya geç. Arama ~60 kodluk elle yazılmış dizine dayanıyor, BIST'te 500+
 - Açık işler: sahibi doğrulama betiğini çalıştırıp varsayılanı değiştirmeli
   ve `import_bist_companies.py` çıktısını commit etmeli; banka (UFRS)
   şablonu eşlemesi yok.
+- İş Yatırım eşlemesinde `RECEIVABLES` / `INVENTORY` (ADR-016 kalite
+  bayrakları için) yok: kalem kodları canlı doğrulanamadı. İş Yatırım
+  birincil kaynak yapılırsa alacak/stok kontrolleri "değerlendirilemedi"
+  kalır; `verify_isyatirim.py --dump-codes` çıktısından kodlar eklenmeli.
