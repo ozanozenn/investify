@@ -1,3 +1,4 @@
+import { authHeaders, handleUnauthorized } from "./auth";
 // Mirrors apps/api/app/schemas/diff.py (SnapshotDiffResult / MetricDelta) and
 // the AnalysisHistoryEntry shape returned by the existing
 // /api/companies/{ticker}/analysis/history endpoint. Kept as a standalone
@@ -20,10 +21,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders(),
       ...(init?.headers ?? {}),
     },
     cache: "no-store",
   });
+  handleUnauthorized(res.status);
   if (!res.ok) {
     const body = await res.text();
     throw new ComparisonApiError(res.status, body || res.statusText);

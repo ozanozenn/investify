@@ -2,12 +2,17 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
+
+# Geliştirme dışında bu değerlerle açılış reddedilir (core/security.py).
+DEFAULT_JWT_SECRET = "dev-only-insecure-secret-change-me"
+DEFAULT_APP_PASSWORD = "changeme"
 
 
 class Settings(BaseSettings):
@@ -29,18 +34,36 @@ class Settings(BaseSettings):
     # --- Redis (cache only in Phase 1) ---
     redis_url: str = Field(default="redis://localhost:63790/0")
     cache_enabled: bool = Field(default=True)
+    quote_cache_ttl_seconds: int = Field(default=60)
+
+    # --- İzleme listesi zamanlanmış yenileme (ADR-013) ---
+    # Günler: "mon-fri" ya da "mon,wed,fri"; saat `timezone` cinsinden "SS:DD".
+    # Testlerde tests/conftest.py WATCHLIST_REFRESH_ENABLED=false yapar.
+    watchlist_refresh_enabled: bool = Field(default=True)
+    watchlist_refresh_days: str = Field(default="mon-fri")
+    watchlist_refresh_time: str = Field(default="18:30")
 
     # --- Auth ---
-    auth_dev_bypass: bool = Field(default=True)
-    jwt_secret: str = Field(default="dev-only-insecure-secret-change-me")
+    # Varsayılan kapalı (ADR-007): giriş ekranı var, token olmadan API kapalı.
+    # Yerelde istenirse .env'de AUTH_DEV_BYPASS=true (yalnız APP_ENV=development'ta işler).
+    auth_dev_bypass: bool = Field(default=False)
+    jwt_secret: str = Field(default=DEFAULT_JWT_SECRET)
     jwt_algorithm: str = Field(default="HS256")
     jwt_expire_minutes: int = Field(default=60 * 24 * 7)
     app_user_email: str = Field(default="ozanozen4@gmail.com")
-    app_user_password: str = Field(default="changeme")
+    app_user_password: str = Field(default=DEFAULT_APP_PASSWORD)
 
     # --- Providers ---
     evds_api_key: str | None = Field(default=None)
     request_timeout_seconds: float = Field(default=15.0)
+
+    # --- Financial statement sources (ADR-015) ---
+    # Default = yfinance only (pre-ADR-015 behaviour). İş Yatırım stays off
+    # until the owner live-verifies it with scripts/verify_isyatirim.py.
+    # The fallback is also the cross-check partner; cross-check needs one.
+    financial_provider_primary: Literal["yfinance", "isyatirim"] = Field(default="yfinance")
+    financial_provider_fallback: Literal["none", "yfinance", "isyatirim"] = Field(default="none")
+    financial_cross_check: bool = Field(default=False)
 
     # --- LLM ---
     # Provider selection is automatic from which key is set (see
@@ -51,7 +74,7 @@ class Settings(BaseSettings):
     openai_model: str = Field(default="gpt-4.1-mini")
     gemini_api_key: str | None = Field(default=None)
     gemini_model: str = Field(default="gemini-3.6-flash")
-    llm_prompt_version: str = Field(default="company-analysis-v3")
+    llm_prompt_version: str = Field(default="company-analysis-v4")
 
     # --- Versions (section 79) ---
     financial_engine_version: str = Field(default="v1")
@@ -84,6 +107,12 @@ def get_scoring_config() -> dict:
 @lru_cache
 def get_analysis_config() -> dict:
     with open(CONFIG_DIR / "analysis.yaml", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+@lru_cache
+def get_financial_sources_config() -> dict:
+    with open(CONFIG_DIR / "financial_sources.yaml", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 

@@ -18,6 +18,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 
+from app.llm.bank_context_formatter import format_bank_metrics
 from app.llm.number_format import (
     format_currency,
     format_multiple,
@@ -27,6 +28,7 @@ from app.llm.number_format import (
     format_ratio_percent,
     format_score,
 )
+from app.llm.verdict_formatter import format_verdict_for_prompt
 from app.schemas.context import (
     CompanyContext,
     DataQuality,
@@ -38,6 +40,7 @@ from app.schemas.context import (
 )
 from app.schemas.dcf import DcfAssumptions, DcfResult, DcfScenarioResult, SensitivityCell
 from app.schemas.financial import FinancialHistoryPoint, FinancialMetrics
+from app.schemas.quality import QualityFlagsResult, QualityFlagValue, RealGrowth
 from app.schemas.scoring import CategoryScore, ScoreComponent, ScoreResult
 from app.schemas.valuation import ValuationMetrics
 
@@ -246,6 +249,62 @@ def _fmt_sources(items: list[SourceRef]) -> list[dict]:
     return [s.model_dump(mode="json") for s in items]
 
 
+def _fmt_quality_value(v: QualityFlagValue) -> str:
+    return format_currency(v.value) if v.unit == "currency" else format_ratio_percent(v.value)
+
+
+def _fmt_quality_flags(q: QualityFlagsResult | None) -> dict | None:
+    """Kalite bayrakları (ADR-016). Eski snapshot'larda None."""
+    if q is None:
+        return None
+    return {
+        "as_of_period": q.as_of_period,
+        "flags": [
+            {
+                "key": fl.key,
+                "severity": fl.severity,
+                "title": fl.title,
+                "detail": fl.detail,
+                "values": {v.label: _fmt_quality_value(v) for v in fl.values},
+            }
+            for fl in q.flags
+        ],
+        "passed_checks": q.passed_checks,
+        "not_evaluated": [{"name": c.name, "reason": c.reason} for c in q.not_evaluated],
+        "missing_fields": q.missing_fields,
+        "not_applicable_reason": q.not_applicable_reason,
+    }
+
+
+_REAL_GROWTH_NOTE = (
+    "Reel büyüme = (1 + nominal büyüme) / (1 + yıllık TÜFE) - 1. Yaklaşık bir değerdir: son mali yılın "
+    "büyümesi, o yılın kendi enflasyonuyla değil en son açıklanan yıllık TÜFE ile arındırılmıştır."
+)
+
+
+def _fmt_real_growth(r: RealGrowth | None) -> dict | None:
+    """Enflasyondan arındırılmış büyüme (ADR-016). Eski snapshot'larda None."""
+    if r is None:
+        return None
+
+    def pct(value: float | None) -> str | None:
+        return format_ratio_percent(value) if value is not None else None
+
+    obs = r.cpi_observation_date
+    return {
+        "as_of_period": r.as_of_period,
+        "cpi_yoy": pct(r.cpi_yoy),
+        # Aylık seri: gün bilgisi anlamsız, "Ocak 2026" yeterli.
+        "cpi_observation_month": f"{_TR_MONTHS[obs.month - 1]} {obs.year}" if obs else None,
+        "revenue_growth_nominal": pct(r.revenue_growth_nominal),
+        "revenue_growth_real": pct(r.revenue_growth_real),
+        "net_income_growth_nominal": pct(r.net_income_growth_nominal),
+        "net_income_growth_real": pct(r.net_income_growth_real),
+        "note": _REAL_GROWTH_NOTE,
+        "missing_fields": r.missing_fields,
+    }
+
+
 def format_context_for_prompt(context: StructuredAnalysisContext) -> dict:
     return {
         "ticker": context.ticker,
@@ -264,6 +323,12 @@ def format_context_for_prompt(context: StructuredAnalysisContext) -> dict:
         "next_rate_decision_date": (
             _date_tr(context.next_rate_decision_date) if context.next_rate_decision_date else None
         ),
+        "quality_flags": _fmt_quality_flags(context.quality_flags),
+        "real_growth": _fmt_real_growth(context.real_growth),
+        # company-analysis-v4: LLM deterministik hükmü açıklar (ADR-011).
+        "verdict": format_verdict_for_prompt(context.verdict),
+        # Yalnızca bankalarda (ADR-014); diğer şirketlerin prompt'u değişmez.
+        **({"bank_metrics": format_bank_metrics(context.bank_metrics)} if context.bank_metrics else {}),
     }
 
 

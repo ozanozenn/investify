@@ -1,0 +1,28 @@
+# Finansal tablo kaynakları — birincil/yedek kaynak çapraz kontrolü (ADR-015).
+# Hangi kaynağın birincil olduğu ve çapraz kontrolün açık olup olmadığı
+# .env ayarlarıdır (FINANCIAL_PROVIDER_PRIMARY, FINANCIAL_PROVIDER_FALLBACK,
+# FINANCIAL_CROSS_CHECK; bkz. core/config.py). Buradaki değerler yalnızca
+# çapraz kontrol açıkken kullanılır.
+
+cross_check:
+  # |a - b| / max(|a|, |b|) bu değeri aşarsa veri kalitesi uyarısı üretilir.
+  relative_tolerance: 0.05
+  # Yalnızca yıllık dönemler: çeyreklik değerler kümülatif tablolardan fark
+  # alınarak türetildiği için (ve TMS 29 yeniden düzenlemeleri yüzünden)
+  # kaynaklar arasında daha gürültülü.
+  period_types: [ANNUAL]
+  # Tanımı iki kaynakta aynı olan kalemler. Bilinçli olarak dışarıda
+  # bırakılanlar: EBITDA (Yahoo'nun EBITDA'sı ile İş Yatırım/BIST FAVÖK
+  # tanımı farklı), EBIT, TOTAL_DEBT (kiralama yükümlülüklerinin dahil
+  # edilmesi farklı olabilir), CAPEX, FREE_CASH_FLOW.
+  fields:
+    - REVENUE
+    - GROSS_PROFIT
+    - NET_INCOME
+    - TOTAL_ASSETS
+    - EQUITY
+    - CASH
+    - OPERATING_CASH_FLOW
+  # Uyarı listesini şişirmemek için en fazla bu kadar dönem ayrı ayrı
+  # yazılır; kalanı tek satırda özetlenir.
+  max_warnings: 3

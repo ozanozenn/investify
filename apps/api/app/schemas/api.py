@@ -4,6 +4,7 @@ import datetime as dt
 
 from pydantic import BaseModel
 
+from app.schemas.bank import BankMetrics
 from app.schemas.context import (
     CompanyContext,
     DataQuality,
@@ -13,6 +14,7 @@ from app.schemas.context import (
     SourceRef,
 )
 from app.schemas.financial import FinancialHistoryPoint, FinancialMetrics
+from app.schemas.quality import QualityFlagsResult, RealGrowth
 from app.schemas.scoring import ScoreResult
 from app.schemas.valuation import ValuationMetrics
 from app.schemas.verdict import Verdict
@@ -34,8 +36,12 @@ class CompanyAnalysisResponse(BaseModel):
     analysis: dict
     unsupported_reason: str | None = None
     verdict: Verdict | None = None
+    quality_flags: QualityFlagsResult | None = None
+    real_growth: RealGrowth | None = None
     versions: dict[str, str]
     stage_results: dict[str, str] | None = None
+    # Yalnızca bankalarda dolu (ADR-014).
+    bank_metrics: BankMetrics | None = None
 
 
 class CompanySearchResult(BaseModel):

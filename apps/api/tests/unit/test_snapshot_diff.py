@@ -185,3 +185,34 @@ def test_diff_result_carries_snapshot_identity():
     assert result.to_snapshot_id == 2
     assert result.from_as_of == PREVIOUS.as_of
     assert result.to_as_of == CURRENT.as_of
+
+
+def _with_scores(snapshot: AnalysisSnapshot, **scores) -> AnalysisSnapshot:
+    snapshot.context_json = {**snapshot.context_json, "scores": {**snapshot.context_json["scores"], **scores}}
+    return snapshot
+
+
+def test_bank_engine_switch_is_not_reported_as_thesis_strengthening():
+    # Code review bulgusu: banka eskiden "desteklenmiyor" (skor 0), banka
+    # motoruyla 60 oldu → "Tez güçlendi: +60" yanıltıcıydı.
+    base = dict(revenue_growth_yoy=0.1, ebitda_margin=None, net_debt_to_ebitda=None, roe=0.2, pe=5.0)
+    before = _with_scores(_snapshot(1, dt.datetime(2026, 9, 1, tzinfo=dt.timezone.utc), overall=0.0, **base),
+                          engine_version="v1", unsupported_reason="desteklenmiyor")
+    after = _with_scores(_snapshot(2, dt.datetime(2026, 10, 27, tzinfo=dt.timezone.utc), overall=60.0, **base),
+                         engine_version="bank-v1", unsupported_reason=None)
+    diff = compute_snapshot_diff(before, after)
+    assert diff.overall_score_delta is None
+    assert diff.thesis_strength == "UNCHANGED"
+    assert "kıyaslanamaz" in diff.thesis_strength_reason
+    assert all(d.metric != "overall_score" for d in diff.notable_changes)
+
+
+def test_scoring_engine_version_change_makes_scores_incomparable():
+    base = dict(revenue_growth_yoy=0.1, ebitda_margin=0.2, net_debt_to_ebitda=1.0, roe=0.2, pe=5.0)
+    before = _with_scores(_snapshot(1, dt.datetime(2026, 9, 1, tzinfo=dt.timezone.utc), overall=50.0, **base),
+                          engine_version="v1")
+    after = _with_scores(_snapshot(2, dt.datetime(2026, 10, 27, tzinfo=dt.timezone.utc), overall=70.0, **base),
+                         engine_version="v2")
+    diff = compute_snapshot_diff(before, after)
+    assert diff.overall_score_delta is None
+    assert "v1 → v2" in diff.thesis_strength_reason

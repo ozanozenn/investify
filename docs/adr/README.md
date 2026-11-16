@@ -18,3 +18,7 @@ Yeni ADR için `/adr` komutunu kullan.
 | [010](ADR-010-test-strategy-and-repo-structure.md) | Test stratejisi | Kabul |
 | [011](ADR-011-verdict-card-and-demo-signal.md) | Hüküm kartı ve demo AL/TUT/SAT | Kabul (sinyal demo) |
 | [012](ADR-012-scoring-and-valuation-methodology.md) | Skorlama ve değerleme yöntemi | Kabul |
+| [013](ADR-013-watchlist-and-scheduled-refresh.md) | İzleme listesi ve zamanlanmış toplu yenileme | Kabul |
+| [014](ADR-014-bank-engine.md) | Banka analiz motoru | Kabul (yfinance alanları canlı doğrulanmadı) |
+| [015](ADR-015-financial-data-sources-v2.md) | Finansal veri kaynakları v2 (İş Yatırım, çapraz kontrol, BIST listesi) | Kabul (varsayılan kapalı) |
+| [016](ADR-016-quality-flags-and-real-growth.md) | Kalite bayrakları ve reel büyüme | Kabul |

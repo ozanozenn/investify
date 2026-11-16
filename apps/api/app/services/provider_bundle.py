@@ -17,9 +17,9 @@ from app.providers.base import (
 )
 from app.providers.company.yfinance_company_provider import YFinanceCompanyDataProvider
 from app.providers.disclosure.kap_provider import KapDisclosureProvider
-from app.providers.financial.yfinance_provider import YFinanceFinancialDataProvider
 from app.providers.macro.macro_provider import CompositeMacroDataProvider
 from app.providers.market.yfinance_provider import YFinanceMarketDataProvider
+from app.services.financial_sources import build_financial_provider
 
 
 @dataclass
@@ -47,7 +47,7 @@ def build_provider_bundle(settings: Settings) -> ProviderBundle:
     return ProviderBundle(
         company=YFinanceCompanyDataProvider(),
         market=YFinanceMarketDataProvider(),
-        financial=YFinanceFinancialDataProvider(),
+        financial=build_financial_provider(settings),  # ADR-015; default: yfinance only
         disclosure=KapDisclosureProvider(),
         macro=CompositeMacroDataProvider(evds_api_key=settings.evds_api_key),
         llm=llm,

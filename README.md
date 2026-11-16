@@ -1,115 +1,197 @@
-# Investify — BIST Investment Intelligence Platform
+# Investify
 
-A personal, evidence-based investment research platform for Borsa İstanbul
-(BIST) companies. **Not a trading bot.** A rule-based AL/TUT/SAT signal
-is shown as a clearly-labelled demo only (ADR-011, one flag turns it off) —
-the product's job is to organize the financial, valuation, KAP, macro and LLM-
-interpreted context a careful analyst would want before deciding, so the
-user can decide for themself. Full product vision: `MAIN_ROADMAP.md`. This
-delivery implements **Phase 1** only — see `docs/PHASE_1_SCOPE.md`.
+[![CI](https://github.com/ozanozenn/investify/actions/workflows/ci.yml/badge.svg)](https://github.com/ozanozenn/investify/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## What's actually running end-to-end
+**Evidence-based investment research platform for Borsa Istanbul (BIST).**
 
+Investify pulls market prices, financial statements, regulatory disclosures
+(KAP) and macro data for a BIST company, runs them through deterministic
+valuation and scoring engines, and adds an LLM-written explanation on top —
+without ever letting the LLM do the math. It is built with FastAPI,
+PostgreSQL, Redis and Next.js, and every analysis is stored as an immutable,
+reproducible snapshot so you can see exactly what the system said, and why,
+on any given day.
+
+> Not a trading bot and not investment advice. A rule-based buy/hold/sell
+> label is shown only as a clearly marked demo and can be switched off with
+> one config flag ([ADR-011](docs/adr/ADR-011-verdict-card-and-demo-signal.md)).
+
+## Screenshots
+
+> Screenshots use **synthetic demo data** (fictional companies such as
+> "Örnek Cam Sanayi A.Ş."), not real market data. The UI is in Turkish.
+
+**Verdict at a glance** — three valuation methods vote on cheap / fair /
+expensive; company quality comes from the deterministic score.
+
+![Company page: verdict card](docs/images/company-verdict.png)
+
+**Why** — score breakdown, rule-based quality flags and valuation vs. the
+company's own history.
+
+![Company page: score, quality flags and valuation](docs/images/company-analysis.png)
+
+**Watchlist** — refreshed automatically after market close.
+
+![Watchlist dashboard](docs/images/dashboard.png)
+
+## Highlights
+
+- **Deterministic engines, LLM only interprets.** Financial ratios, a
+  config-driven scoring model, DCF (bear/base/bull + WACC × terminal-growth
+  sensitivity), peer comparison and a bank-specific engine are pure Python
+  functions with thresholds in versioned YAML. The LLM receives
+  pre-formatted numbers and is only allowed to explain them.
+- **Verdict engine.** Own-history multiples, sector medians and DCF each
+  vote; a price verdict is given only when a real majority agrees, and
+  missing data is never guessed (`missing_fields`, no silent defaults).
+- **Hallucination guard.** Every number in the LLM's text is checked
+  against what was actually in its prompt; unsupported numbers trigger one
+  corrective retry and are shown as a warning in the UI.
+- **Inflation-aware analysis.** Rule-based quality flags (e.g. "revenue up,
+  operating cash flow down") and real (CPI-adjusted) growth — essential in
+  a high-inflation market.
+- **Multi-source data layer.** Yahoo Finance, KAP, Central Bank (TCMB EVDS)
+  and Google News, with graceful degradation per source, plus an opt-in
+  second financial source with cross-source validation.
+- **Reproducibility.** Each refresh writes an immutable snapshot with engine
+  and prompt versions, so history and "what changed since last time" are
+  exact.
+- **Watchlist + scheduler.** In-process scheduler refreshes the watchlist
+  after market close; a Postgres advisory lock prevents duplicate runs
+  across workers.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph sources["External data"]
+        YF["Yahoo Finance"]
+        KAP["KAP disclosures"]
+        EVDS["TCMB EVDS"]
+        NEWS["Google News RSS"]
+    end
+
+    sources --> PROV["providers/*<br/>graceful degradation"]
+    PROV --> PIPE["Refresh pipeline"]
+    SCHED["Watchlist scheduler"] --> PIPE
+
+    PIPE --> ENG["Deterministic engines<br/>metrics · scoring · DCF · bank<br/>verdict · quality flags"]
+    ENG --> CTX["Structured context"]
+    CTX --> LLM["LLM interpretation<br/>OpenAI / Gemini<br/>+ hallucination guard"]
+    CTX --> SNAP[("Immutable snapshot<br/>PostgreSQL")]
+    LLM --> SNAP
+
+    SNAP --> API["FastAPI REST + JWT"]
+    CACHE[("Redis<br/>live quote cache")] --- API
+    API --> WEB["Next.js 15 web app"]
 ```
-Ticker search (THYAO, ASELS, FROTO, TUPRS, GARAN, or any BIST symbol)
-  → real company profile (curated seed or live yfinance bootstrap)
-  → real market price/history (Yahoo Finance)
-  → real financial statements (Yahoo Finance, canonically normalized)
-  → real KAP disclosures (kap.org.tr public JSON API)
-  → real FX (Yahoo Finance); policy rate/CPI (TCMB EVDS, or a labeled mock
-    seed if you haven't registered a key yet)
-  → deterministic financial metrics, valuation, scoring (formula registry:
-    docs/FINANCIAL_ENGINE.md / docs/SCORING.md)
-  → structured LLM interpretation (OpenAI, or a labeled deterministic mock
-    if you haven't set OPENAI_API_KEY yet)
-  → persisted, versioned analysis snapshot
-  → Company Detail screen
-```
 
-This was verified against **real, live data** during development — see
-"Verified" below.
+- **Modular monolith** with a one-way import rule: routers → services →
+  {providers, engines, llm} → models
+  ([ADR-001](docs/adr/ADR-001-monorepo-and-backend-framework.md)).
+- **LLM never computes** ([ADR-003](docs/adr/ADR-003-llm-separation.md)).
+- **Snapshots are immutable** ([ADR-005](docs/adr/ADR-005-analysis-snapshots-and-reproducibility.md)).
+
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the
+[16 Architecture Decision Records](docs/adr/README.md).
+
+## Tech stack
+
+| Area | Technologies |
+|---|---|
+| Backend | Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0 (async), Alembic |
+| Data | PostgreSQL, Redis, pandas, yfinance |
+| LLM | OpenAI and Google Gemini (structured outputs), provider fallback chain |
+| Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, TanStack Query |
+| Quality | pytest (424 tests), ruff, ESLint, TypeScript strict, GitHub Actions CI |
+| Ops | Docker Compose, JWT auth |
 
 ## Quick start
 
 ```bash
-cp .env.example .env
-# optional: fill in EVDS_API_KEY / OPENAI_API_KEY — see docs/DATA_SOURCES.md
+cp .env.example .env      # set APP_USER_EMAIL / APP_USER_PASSWORD / JWT_SECRET
+# optional: EVDS_API_KEY, GEMINI_API_KEY or OPENAI_API_KEY — see docs/DATA_SOURCES.md
 docker compose up --build
 ```
 
-- API: http://localhost:8000 (docs at `/docs`)
-- Frontend: http://localhost:3000
-- Type a ticker (e.g. `THYAO`) into the search box.
+- Web app: http://localhost:3000 — log in with the credentials from `.env`.
+- API: http://localhost:8000 (OpenAPI docs at `/docs`).
+- Without an LLM key, a clearly labelled mock LLM is used so the whole
+  pipeline still runs.
 
-Without `docker compose`, see `docs/DEPLOYMENT.md` for running the API and
-web app directly.
+Running the API and web app without Docker: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-## Repository layout
+## Testing and quality
 
-```
-apps/api/     FastAPI backend — see docs/ARCHITECTURE.md
-apps/web/     Next.js frontend
-docs/         Architecture, data sources, formula registry, ADRs, roadmap
-docker-compose.yml
+```bash
+cd apps/api && pytest tests -q && ruff check .           # 424 tests
+cd apps/web && npm run lint && npm run typecheck && npm run build
 ```
 
-## Documentation map
+Backend tests cover the engines with hand-checked fixtures, provider
+response parsing, the hallucination guard, and full API integration flows
+(fake providers, real FastAPI app, real engines) — including partial
+provider failure, bank vs. unsupported sectors, auth and the scheduler. CI
+runs the same checks on every push and pull request.
+
+## Project status
+
+- **Live-verified against real data:** the core pipeline (prices,
+  statements, KAP, FX, scoring) was run against the real services on
+  2026-08-17.
+- **Verified with tests and synthetic data only:** features added later —
+  verdict engine, bank engine, quality flags, watchlist, prompt v4 — because
+  the development environment had no access to the data providers.
+  Checklist for a live run: [docs/V1_DOGRULAMA.md](docs/V1_DOGRULAMA.md).
+- **Built but off by default:** İş Yatırım as a second financial-statement
+  source and the full BIST company-list import, until they are verified
+  against the live endpoints ([ADR-015](docs/adr/ADR-015-financial-data-sources-v2.md)).
+- Roadmap and known gaps: [docs/ROADMAP.md](docs/ROADMAP.md),
+  [docs/TECHNICAL_DEBT.md](docs/TECHNICAL_DEBT.md).
+
+## How I built this
+
+Investify is a solo project built with AI coding agents (Anthropic's
+Claude Code); most of the code, tests and documentation were written by
+the agents, and commits they co-authored carry a `Co-Authored-By: Claude`
+trailer.
+
+My part was product and technical ownership:
+
+- **Product and constraints:** what the tool should and should not do
+  (evidence-based, trading signals only as a labelled demo, Turkish-first UI) and the
+  hard rules the agents had to follow — the LLM never computes, missing data
+  is never guessed, snapshots are immutable.
+- **Decisions:** choosing between the options the agents laid out — data
+  sources, how the verdict should work, which features to build, defer or
+  remove — recorded as [ADRs](docs/adr/README.md).
+- **Process:** a written agent guide ([AGENTS.md](AGENTS.md)) with tests and
+  lint as a gate for every change, separate code-review agent passes on
+  larger changes, and the rule that new data integrations stay disabled until they
+  are verified against the real API. Larger features were split across
+  parallel agents in isolated git worktrees and then integrated and
+  reviewed.
+- **Review:** checking results in the running app and asking for fixes
+  when something was wrong or unclear.
+
+## Documentation
 
 | Doc | Contents |
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System shape, refresh pipeline, layering rules |
-| [docs/PHASE_1_SCOPE.md](docs/PHASE_1_SCOPE.md) | What's in/out of this delivery, Definition of Done |
-| [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) | Every external data source, credential status |
-| [docs/DATABASE.md](docs/DATABASE.md) | Schema, idempotency, migrations |
+| [docs/adr/](docs/adr/README.md) | Architecture Decision Records (Turkish) |
+| [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) | External data sources and credentials |
 | [docs/FINANCIAL_ENGINE.md](docs/FINANCIAL_ENGINE.md) | Every formula, with edge cases |
-| [docs/SCORING.md](docs/SCORING.md) | Scoring model + explainability contract |
-| [docs/LLM.md](docs/LLM.md) | Provider abstraction, prompt versioning, hallucination guard |
-| [docs/SECURITY.md](docs/SECURITY.md) | Auth model, secrets handling |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Setup, cost estimate |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Phase 1 status + proposed Phase 2+ |
-| [docs/TECHNICAL_DEBT.md](docs/TECHNICAL_DEBT.md) | Explicit known shortcuts |
-| [docs/adr/](docs/adr/) | Architecture Decision Records |
+| [docs/SCORING.md](docs/SCORING.md) | Scoring model and explainability contract |
+| [docs/LLM.md](docs/LLM.md) | Provider chain, prompt versioning, hallucination guard |
+| [docs/DATABASE.md](docs/DATABASE.md) | Schema and migrations |
+| [docs/SECURITY.md](docs/SECURITY.md) | Auth model and secrets handling |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Running locally and with Docker |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Phase status |
+| [docs/TECHNICAL_DEBT.md](docs/TECHNICAL_DEBT.md) | Known shortcuts and gaps |
 
-## Tests
+## License
 
-```bash
-cd apps/api
-.venv/bin/pytest tests/ -v
-```
-
-29 tests: financial engine (fixture-based, hand-verified expected values),
-formula edge cases, scoring engine (interpolation + missing-data rescale),
-valuation engine, provider response parsing, and full API integration
-tests (mocked providers, real FastAPI app, real deterministic engines, real
-mock LLM) covering the happy path, partial-provider-failure, and
-first-time-ticker-bootstrap flows.
-
-```bash
-cd apps/web
-npm run typecheck && npm run build
-```
-
-## Verified (this delivery, 2026-08-17)
-
-Ran the live pipeline against real external services from this
-environment (not a demo/canned response):
-- `POST /api/companies/THYAO/refresh` → real Yahoo Finance price + 4 years
-  of financial statements, real KAP disclosures (15 items from
-  `kap.org.tr`), real USD/TRY & EUR/TRY, deterministic score 55.7/100 with
-  full component breakdown, mock LLM output (no `OPENAI_API_KEY` in this
-  environment) with hallucination-guard flags attached.
-- `POST /api/companies/GARAN/refresh` (a bank) → correctly returned the
-  "unsupported industry" state instead of a misleading generic score.
-- `POST /api/companies/SASA/refresh` (a ticker with **no curated seed
-  entry**) → correctly bootstrapped a full company profile live from
-  Yahoo Finance, proving the general onboarding path (not just the 8
-  seeded companies) works.
-- `GET /api/companies/THYAO/analysis` on a second call returned the cached
-  snapshot with no provider calls (verified via server logs).
-
-## Known gaps in this delivery
-
-See `docs/TECHNICAL_DEBT.md`. The one Definition-of-Done item delivered at
-reduced rigor: no automated frontend component tests were written (backend
-has 29 passing tests; frontend was verified via TypeScript build +
-manual/API-level checks only).
+[MIT](LICENSE) © 2026 Ozan Ozen

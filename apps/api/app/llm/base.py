@@ -20,5 +20,13 @@ class LLMProvider(ABC):
 
     @abstractmethod
     async def analyze_company(
-        self, context: StructuredAnalysisContext, prompt_version: str
-    ) -> LLMAnalysisResult: ...
+        self,
+        context: StructuredAnalysisContext,
+        prompt_version: str,
+        extra_instructions: str | None = None,
+    ) -> LLMAnalysisResult:
+        """`extra_instructions`: optional text appended after the prompt
+        template — used for the single hallucination-correction retry
+        (`services/llm_analysis.py`). Implementations that don't call a
+        real model (mock) may ignore it."""
+        ...

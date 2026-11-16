@@ -4,7 +4,9 @@ import datetime as dt
 
 from pydantic import BaseModel
 
+from app.schemas.bank import BankMetrics
 from app.schemas.financial import FinancialHistoryPoint, FinancialMetrics
+from app.schemas.quality import QualityFlagsResult, RealGrowth
 from app.schemas.scoring import ScoreResult
 from app.schemas.valuation import ValuationMetrics
 from app.schemas.verdict import Verdict
@@ -81,3 +83,9 @@ class StructuredAnalysisContext(BaseModel):
     next_rate_decision_date: dt.date | None = None
     # Eski snapshot'larda yok (ADR-011'den önce) — bu yüzden opsiyonel.
     verdict: Verdict | None = None
+    # ADR-016'dan önceki snapshot'larda yok — opsiyonel.
+    quality_flags: QualityFlagsResult | None = None
+    real_growth: RealGrowth | None = None
+    # Yalnızca bankalarda dolu (ADR-014); eski snapshot'larda ve banka
+    # olmayan şirketlerde None.
+    bank_metrics: BankMetrics | None = None

@@ -13,6 +13,7 @@ from app.schemas.context import (
 from app.schemas.financial import FinancialMetrics
 from app.schemas.scoring import CategoryScore, ScoreResult
 from app.schemas.valuation import ValuationMetrics
+from app.schemas.verdict import Verdict, VerdictLens
 
 
 def _context(**overrides) -> StructuredAnalysisContext:
@@ -101,3 +102,57 @@ def test_next_rate_decision_date_is_formatted_in_turkish():
 def test_next_rate_decision_date_absent_stays_none():
     formatted = format_context_for_prompt(_context())
     assert formatted["next_rate_decision_date"] is None
+
+
+def _verdict(signal: str | None = "TUT") -> Verdict:
+    return Verdict(
+        price="PAHALI",
+        quality="GUCLU",
+        confidence="ORTA",
+        signal=signal,
+        headline="Güçlü şirket, fiyatı pahalı — 2 değerleme yönteminden 2 tanesi bu yönde.",
+        lenses=[
+            VerdictLens(key="history", label="Kendi geçmişine göre", verdict="PAHALI", value=1.12,
+                        reason="Çarpanları son 5 yıllık medyanının %12 üstünde."),
+            VerdictLens(key="peers", label="Sektörüne göre", verdict=None, value=None,
+                        reason="Karşılaştırılacak yeterli benzer şirket yok (0)."),
+        ],
+        agreement=1.0,
+        overall_score=66.5,
+        engine_version="v1",
+        missing_fields=["verdict_lens_peers"],
+    )
+
+
+def test_verdict_is_sent_with_turkish_labels_and_engine_reasons():
+    formatted = format_context_for_prompt(_context(verdict=_verdict()))
+    v = formatted["verdict"]
+    assert v["headline"].startswith("Güçlü şirket, fiyatı pahalı")
+    assert (v["price"], v["quality"], v["confidence"]) == ("Pahalı", "Güçlü", "Orta")
+    assert v["lenses"][0] == {
+        "label": "Kendi geçmişine göre",
+        "verdict": "Pahalı",
+        "reason": "Çarpanları son 5 yıllık medyanının %12 üstünde.",
+    }
+    assert v["lenses"][1]["verdict"] is None
+    assert v["missing_fields"] == ["verdict_lens_peers"]
+
+
+def test_verdict_raw_ratios_are_not_sent_to_llm():
+    v = format_context_for_prompt(_context(verdict=_verdict()))["verdict"]
+    assert "agreement" not in v and "overall_score" not in v
+    assert all("value" not in lens for lens in v["lenses"])
+
+
+def test_verdict_signal_is_sent_only_as_labeled_demo():
+    v = format_context_for_prompt(_context(verdict=_verdict()))["verdict"]
+    assert v["demo_signal"].startswith("TUT (")
+    assert "demo" in v["demo_signal"] and "tavsiyesi değildir" in v["demo_signal"]
+    assert "signal" not in v
+
+    no_signal = format_context_for_prompt(_context(verdict=_verdict(signal=None)))["verdict"]
+    assert no_signal["demo_signal"] is None
+
+
+def test_old_snapshot_without_verdict_formats_as_none():
+    assert format_context_for_prompt(_context())["verdict"] is None

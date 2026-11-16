@@ -10,17 +10,25 @@ const OUTLOOK_LABEL: Record<string, string> = {
 };
 
 export function OutlookCard({ title, horizon }: { title: string; horizon: HorizonOutlook }) {
+  // v4 snapshot'ları tek bir `rationale` taşır; v1-v3 snapshot'ları
+  // drivers/risks listeleri. Hangisi varsa o gösterilir (ADR-005: eski
+  // snapshot'lar değişmez, yeniden üretilmez).
+  const drivers = horizon.drivers ?? [];
+  const risks = horizon.risks ?? [];
+
   return (
     <div className="rounded-lg border border-border bg-surface p-3">
       {/* LLM'in kendi "güven" puanı gösterilmez — sayı üretmek LLM'in işi
-          değil (ADR-003). Güvenilirlik deterministik Hüküm kartında. */}
+          değil (ADR-003); v4'te alan tamamen kalktı. Güvenilirlik
+          deterministik Hüküm kartında. */}
       <span className="text-xs font-semibold uppercase tracking-wide text-muted">{title}</span>
       <div className="mt-2">
         <Badge tone={toneForOutlook(horizon.outlook)}>{OUTLOOK_LABEL[horizon.outlook] ?? horizon.outlook}</Badge>
       </div>
-      {horizon.drivers.length > 0 && (
+      {horizon.rationale && <p className="mt-3 text-xs leading-relaxed text-muted">{horizon.rationale}</p>}
+      {drivers.length > 0 && (
         <ul className="mt-3 space-y-1 text-xs text-foreground">
-          {horizon.drivers.slice(0, 3).map((d, i) => (
+          {drivers.slice(0, 3).map((d, i) => (
             <li key={i} className="flex gap-1.5">
               <span className="text-[var(--positive)]">+</span>
               <span className="text-muted">{d}</span>
@@ -28,9 +36,9 @@ export function OutlookCard({ title, horizon }: { title: string; horizon: Horizo
           ))}
         </ul>
       )}
-      {horizon.risks.length > 0 && (
+      {risks.length > 0 && (
         <ul className="mt-1.5 space-y-1 text-xs">
-          {horizon.risks.slice(0, 2).map((d, i) => (
+          {risks.slice(0, 2).map((d, i) => (
             <li key={i} className="flex gap-1.5">
               <span className="text-[var(--negative)]">−</span>
               <span className="text-muted">{d}</span>

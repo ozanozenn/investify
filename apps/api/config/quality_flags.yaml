@@ -1,0 +1,48 @@
+# Kalite bayrakları ve reel büyüme eşikleri (ADR-016).
+# Motor: app/financial_engine/quality_flags.py, app/financial_engine/real_growth.py
+# Bir eşiği değiştirmek aynı veride farklı bayrak üretebilir — snapshot'lar
+# hangi eşikle üretildiğini bilsin diye `version`'ı artır (ADR-005).
+#
+# Oranlar 0-1 ölçeğindedir (0.10 = %10). "Göreli fark" iki büyümenin
+# birbirine oranıdır: (1 + a_büyüme) / (1 + b_büyüme) - 1. Yüksek
+# enflasyonda nominal büyümeler şiştiği için yüzde puan farkı yerine bu
+# kullanılır — enflasyon iki tarafta da olduğundan birbirini götürür.
+
+version: v1
+
+# Gelir artıyor ama faaliyet nakit akışı bozuluyor.
+revenue_vs_cash:
+  min_revenue_growth: 0.0      # gelir büyümesi bundan büyükse "artıyor"
+  max_ocf_growth: -0.10        # FNA büyümesi bu değer veya altındaysa "bozuluyor"
+
+# Net kâr, faaliyet nakit akışından çok daha hızlı büyüyor (tahakkuk kalitesi).
+earnings_vs_cash:
+  min_relative_gap: 0.25
+
+# Marj daralması / genişlemesi (yüzde puan; 0.03 = 3 puan).
+margin_trend:
+  ebitda_margin_points: 0.03
+  net_margin_points: 0.03
+
+# Toplam borç, FAVÖK'ten hızlı artıyor.
+debt_vs_ebitda:
+  min_relative_gap: 0.20
+
+# Serbest nakit akışı art arda negatif.
+negative_fcf_streak:
+  years: 2
+
+# Özkaynak eriyor (negatif özkaynak her zaman bayrak).
+equity_trend:
+  max_equity_growth: -0.05
+
+# Alacak / stok gelirden hızlı büyüyor.
+working_capital_vs_revenue:
+  receivables_min_relative_gap: 0.15
+  inventory_min_relative_gap: 0.15
+
+# Reel büyüme: en son TÜFE gözlemi, son mali yılın bitişinden en fazla bu
+# kadar ay uzaktaysa kullanılır; daha uzaksa dönem uyumsuzluğu çok büyük
+# sayılır ve reel büyüme hesaplanmaz (missing_fields: cpi_period_mismatch).
+real_growth:
+  max_cpi_gap_months: 12

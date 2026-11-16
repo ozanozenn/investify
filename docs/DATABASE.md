@@ -28,6 +28,9 @@ score_snapshots                — JSONB dump of the latest ScoreResult computat
 analysis_snapshots             — THE reproducibility backbone (ADR-005): immutable,
                                   versioned, holds the exact LLM input (context_json)
                                   and output (analysis_json) for one refresh
+
+watchlist_items                — One row per watched ticker (single user, no user column)
+                                  + result of the last batch refresh job (ADR-013)
 ```
 
 ## Why JSONB for the *_snapshots tables but normalized rows for financial_values

@@ -1,6 +1,6 @@
 # ADR-001: Tek repo, modüler monolit backend
 
-**Durum:** Kabul edildi · 2026-08-17 · gözden geçirildi 2026-10-12
+**Durum:** Kabul edildi · 2026-08-17 · gözden geçirildi 2026-10-27
 
 ## Bağlam
 Tek kullanıcı, tek geliştirici. Yol haritası motorları (finansal, skor,
@@ -27,5 +27,8 @@ değerleme) ayrı paketler olarak öneriyor ama ayrı paketlerin bakım yükü b
 ## Sonuçlar
 - Motorlar kolay test edilir ve gerekirse paket olarak ayrılabilir.
 - Katman kuralı araçla değil review ile korunuyor.
-- `docker-compose.yml`'de Redis servisi var ama **kodda kullanılmıyor**;
-  ya önbellek için devreye alınacak ya kaldırılacak (açık iş).
+- Redis yalnızca hafif önbellek: sayfa açılışındaki güncel fiyat
+  (`GET /api/companies/{ticker}/quote`) `services/cache.py` ile
+  önbelleklenir (TTL `QUOTE_CACHE_TTL_SECONDS`, varsayılan 60 sn). Redis'e
+  ulaşılamazsa bir kez uyarı loglanır, önbelleksiz devam edilir — hiçbir
+  istek önbellek yüzünden başarısız olmaz.

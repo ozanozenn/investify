@@ -5,8 +5,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 from app.core.logging import get_logger
 from app.llm.base import LLMProvider, LLMProviderError
-from app.llm.context_formatter import render_context_json
-from app.llm.prompt_loader import load_prompt_template
+from app.llm.prompt_loader import render_prompt
 from app.schemas.context import StructuredAnalysisContext
 from app.schemas.llm_analysis import LLMAnalysisResult
 
@@ -28,11 +27,12 @@ class OpenAIProvider(LLMProvider):
         reraise=True,
     )
     async def analyze_company(
-        self, context: StructuredAnalysisContext, prompt_version: str
+        self,
+        context: StructuredAnalysisContext,
+        prompt_version: str,
+        extra_instructions: str | None = None,
     ) -> LLMAnalysisResult:
-        template = load_prompt_template(prompt_version)
-        context_json = render_context_json(context)
-        prompt = template.replace("{context_json}", context_json)
+        prompt = render_prompt(prompt_version, context, extra_instructions)
 
         try:
             completion = await self._client.beta.chat.completions.parse(

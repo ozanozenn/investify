@@ -42,6 +42,10 @@ class Quote:
     as_of: dt.datetime
     source_code: str
     fetched_at: dt.datetime
+    # Sağlayıcı veriyorsa: önceki kapanış ve fiyatın borsadaki zamanı
+    # (yfinance BIST için ~15 dk gecikmeli). Vermiyorsa None — tahmin edilmez.
+    previous_close: float | None = None
+    market_time: dt.datetime | None = None
 
 
 @dataclass

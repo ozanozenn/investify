@@ -65,6 +65,8 @@ def _snapshot_to_response(snapshot: AnalysisSnapshot, stage_results: dict[str, s
         analysis=snapshot.analysis_json,
         unsupported_reason=ctx.get("unsupported_reason"),
         verdict=ctx.get("verdict"),
+        quality_flags=ctx.get("quality_flags"),
+        real_growth=ctx.get("real_growth"),
         versions={
             "financial_engine": snapshot.financial_engine_version,
             "scoring_engine": snapshot.scoring_engine_version,
@@ -73,6 +75,7 @@ def _snapshot_to_response(snapshot: AnalysisSnapshot, stage_results: dict[str, s
             "llm_model": snapshot.llm_model,
         },
         stage_results=stage_results,
+        bank_metrics=ctx.get("bank_metrics"),
     )
 
 

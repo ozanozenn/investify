@@ -20,10 +20,21 @@ class CanonicalField(str, enum.Enum):
     TOTAL_ASSETS = "TOTAL_ASSETS"
     TOTAL_DEBT = "TOTAL_DEBT"
     EQUITY = "EQUITY"
+    RECEIVABLES = "RECEIVABLES"  # kalite bayrakları (ADR-016)
+    INVENTORY = "INVENTORY"  # kalite bayrakları (ADR-016)
     # Cash flow
     OPERATING_CASH_FLOW = "OPERATING_CASH_FLOW"
     CAPEX = "CAPEX"
     FREE_CASH_FLOW = "FREE_CASH_FLOW"
+    # Banka kalemleri (ADR-014). yfinance eşlemesi: yfinance_mapping.py
+    # BANK_* sözlükleri. DEPOSITS'in yfinance karşılığı yok (bkz. orada).
+    NET_INTEREST_INCOME = "NET_INTEREST_INCOME"
+    INTEREST_INCOME = "INTEREST_INCOME"
+    INTEREST_EXPENSE = "INTEREST_EXPENSE"
+    OPERATING_EXPENSE = "OPERATING_EXPENSE"
+    CREDIT_LOSS_PROVISION = "CREDIT_LOSS_PROVISION"
+    LOANS = "LOANS"
+    DEPOSITS = "DEPOSITS"
 
 
 class FetchStatus(str, enum.Enum):

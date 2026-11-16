@@ -15,6 +15,13 @@ def _yahoo_symbol(ticker: str, exchange: str = "BIST") -> str:
     return f"{ticker.upper()}.IS" if exchange == "BIST" else ticker.upper()
 
 
+def _market_time(raw: object) -> dt.datetime | None:
+    """`regularMarketTime` (epoch saniye) -> UTC datetime; tanınmazsa None."""
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)) or raw <= 0:
+        return None
+    return dt.datetime.fromtimestamp(raw, tz=dt.timezone.utc)
+
+
 class YFinanceMarketDataProvider(MarketDataProvider):
     code = "yfinance"
 
@@ -33,6 +40,7 @@ class YFinanceMarketDataProvider(MarketDataProvider):
         if price is None:
             raise ProviderUnavailableError(self.code, f"no price data for {ticker}")
         now = dt.datetime.now(dt.timezone.utc)
+        previous_close = info.get("regularMarketPreviousClose") or info.get("previousClose")
         return Quote(
             ticker=ticker.upper(),
             price=float(price),
@@ -44,6 +52,8 @@ class YFinanceMarketDataProvider(MarketDataProvider):
             as_of=now,
             source_code=self.code,
             fetched_at=now,
+            previous_close=float(previous_close) if previous_close else None,
+            market_time=_market_time(info.get("regularMarketTime")),
         )
 
     async def get_historical_prices(self, ticker: str, years: int = 5) -> list[Candle]:

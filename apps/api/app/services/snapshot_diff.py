@@ -100,6 +100,25 @@ def _valuation_direction(
     return "unchanged"
 
 
+def _score_incomparability(previous_ctx: dict, current_ctx: dict) -> str | None:
+    """Genel skorlar aynı yöntemle mi hesaplandı? Değilse nedenini döner.
+
+    Örn. bir banka eskiden "desteklenmiyor" (skor 0) idi, banka motoruyla
+    (ADR-014) ilk yenilemede skor 60 olur — bu şirketin değil yöntemin
+    değişmesidir; "tez güçlendi" demek yanıltır."""
+    prev_scores = previous_ctx.get("scores") or {}
+    curr_scores = current_ctx.get("scores") or {}
+    if prev_scores.get("unsupported_reason") or curr_scores.get("unsupported_reason"):
+        return "Anlık görüntülerden birinde bu sektör için skor hesaplanmamış; genel skorlar kıyaslanamaz."
+    prev_version, curr_version = prev_scores.get("engine_version"), curr_scores.get("engine_version")
+    if prev_version != curr_version:
+        return (
+            f"Skorlama yöntemi değişti ({prev_version} → {curr_version}); "
+            "genel skorlar kıyaslanamaz."
+        )
+    return None
+
+
 def _classify_thesis_strength(
     overall_score_delta: float | None, strength_cfg: dict[str, float]
 ) -> tuple[Literal["STRENGTHENED", "WEAKENED", "UNCHANGED"], str]:
@@ -139,10 +158,21 @@ def compute_snapshot_diff(previous: AnalysisSnapshot, current: AnalysisSnapshot)
     ]
     notable_changes = [d for d in deltas if d.is_notable]
 
+    incomparable_reason = _score_incomparability(previous_ctx, current_ctx)
+    if incomparable_reason:
+        deltas = [
+            d.model_copy(update={"delta": None, "is_notable": False}) if d.metric == "overall_score" else d
+            for d in deltas
+        ]
+    notable_changes = [d for d in deltas if d.is_notable]
+
     overall_delta_metric = next(d for d in deltas if d.metric == "overall_score")
     overall_score_delta = overall_delta_metric.delta
 
-    thesis_strength, thesis_strength_reason = _classify_thesis_strength(overall_score_delta, strength_cfg)
+    if incomparable_reason:
+        thesis_strength, thesis_strength_reason = "UNCHANGED", incomparable_reason
+    else:
+        thesis_strength, thesis_strength_reason = _classify_thesis_strength(overall_score_delta, strength_cfg)
     valuation_direction = _valuation_direction(previous_ctx, current_ctx)
 
     return SnapshotDiffResult(

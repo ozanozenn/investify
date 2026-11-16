@@ -6,6 +6,8 @@ freshness and metric coverage, per config/analysis.yaml weights.
 from __future__ import annotations
 
 from app.core.config import get_analysis_config
+from app.financial_engine.bank_engine import BANK_CORE_FIELDS
+from app.schemas.bank import BankMetrics
 from app.schemas.context import DataQuality
 from app.schemas.financial import FinancialMetrics
 
@@ -56,6 +58,58 @@ def compute_data_quality(
         metrics.net_debt_to_ebitda,
         metrics.debt_to_equity,
         metrics.fcf_margin,
+    ]
+    coverage = sum(1 for m in tracked_metrics if m is not None) / len(tracked_metrics)
+
+    overall = round(
+        completeness * cfg["completeness"] + freshness * cfg["freshness"] + coverage * cfg["metric_coverage"],
+        3,
+    )
+    return DataQuality(
+        completeness=round(completeness, 3),
+        freshness=round(freshness, 3),
+        metric_coverage=round(coverage, 3),
+        overall=overall,
+        warnings=warnings,
+    )
+
+
+def compute_bank_data_quality(
+    bank_metrics: BankMetrics,
+    stage_results: dict[str, str],
+    market_available: bool,
+) -> DataQuality:
+    """Banka sürümü (ADR-014): tamlık banka çekirdek alanlarına, kapsam
+    banka oranlarına göre ölçülür. Genel sürüm FAVÖK/serbest nakit akışı gibi
+    bankada hiç olmayan alanları eksik sayıp kaliteyi haksız yere düşürürdü.
+    Kapsama yalnızca yfinance'ten makul olarak gelen oranlar girer; kredi/
+    mevduat gibi sağlayıcının hiç vermediği oranlar kaliteyi düşürmez."""
+    cfg = get_analysis_config()["data_quality"]["weights"]
+    warnings: list[str] = []
+
+    no_periods = "no_financial_periods" in bank_metrics.missing_fields
+    missing = len(BANK_CORE_FIELDS) if no_periods else sum(
+        1 for f in BANK_CORE_FIELDS if f in bank_metrics.missing_fields
+    )
+    completeness = max(0.0, 1 - missing / len(BANK_CORE_FIELDS))
+    if missing:
+        warnings.append(f"Son dönem için {missing} temel banka finansal alanı eksik")
+
+    failed_stages = [name for name, status in stage_results.items() if status == "FAILED"]
+    freshness = max(0.0, 1 - 0.2 * len(failed_stages))
+    for stage in failed_stages:
+        warnings.append(f"{_stage_label(stage)} verisi alınamadı")
+    if not market_available:
+        warnings.append("Piyasa verisi alınamadı")
+        freshness = min(freshness, 0.5)
+
+    tracked_metrics = [
+        bank_metrics.roe,
+        bank_metrics.roa,
+        bank_metrics.nim_proxy,
+        bank_metrics.nii_growth_yoy,
+        bank_metrics.net_income_growth_yoy,
+        bank_metrics.equity_to_assets,
     ]
     coverage = sum(1 for m in tracked_metrics if m is not None) / len(tracked_metrics)
 

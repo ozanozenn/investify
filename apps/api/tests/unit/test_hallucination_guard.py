@@ -7,7 +7,11 @@ from __future__ import annotations
 
 import datetime as dt
 
-from app.llm.hallucination_guard import find_unsupported_numbers
+from app.llm.hallucination_guard import (
+    build_correction_instructions,
+    find_unsupported_numbers,
+    flagged_literals,
+)
 from app.schemas.context import (
     CompanyContext,
     DataQuality,
@@ -19,6 +23,7 @@ from app.schemas.financial import FinancialMetrics
 from app.schemas.llm_analysis import HorizonOutlook, LLMAnalysisResult
 from app.schemas.scoring import CategoryScore, ScoreResult
 from app.schemas.valuation import ValuationMetrics
+from app.schemas.verdict import Verdict, VerdictLens
 
 
 def _context() -> StructuredAnalysisContext:
@@ -49,9 +54,10 @@ def _context() -> StructuredAnalysisContext:
 
 
 def _result(text: str) -> LLMAnalysisResult:
-    empty_horizon = HorizonOutlook(outlook="NEUTRAL", confidence=0.5, drivers=[], risks=[], catalysts=[])
+    empty_horizon = HorizonOutlook(outlook="NEUTRAL", rationale="Gerekçe.")
     return LLMAnalysisResult(
         executive_summary=text,
+        what_matters_now=[],
         short_term=empty_horizon,
         medium_term=empty_horizon,
         long_term=empty_horizon,
@@ -142,3 +148,96 @@ def test_percent_points_macro_value_is_verified_against_context():
     text = "TCMB politika faizi %37,0 seviyesindedir."
     flags = find_unsupported_numbers(context, _result(text))
     assert flags == []
+
+
+# --- company-analysis-v4 -----------------------------------------------------
+
+
+def _verdict() -> Verdict:
+    return Verdict(
+        price="PAHALI",
+        quality="ORTA",
+        confidence="ORTA",
+        headline="Orta kalitede şirket, fiyatı pahalı — 3 değerleme yönteminden 2 tanesi bu yönde.",
+        lenses=[
+            VerdictLens(key="history", label="Kendi geçmişine göre", verdict="PAHALI", value=1.12,
+                        reason="Çarpanları son 5 yıllık medyanının %12 üstünde."),
+            VerdictLens(key="dcf", label="İndirgenmiş nakit akışına (DCF) göre", verdict="PAHALI", value=-0.31,
+                        reason="Baz senaryo içsel değeri güncel fiyatın %31 altında."),
+        ],
+        agreement=0.6667,
+        overall_score=57.5,
+        engine_version="v1",
+    )
+
+
+def test_v4_what_matters_now_and_horizon_rationale_are_checked():
+    result = _result("Temiz özet.")
+    result.what_matters_now = ["Net kâr marjı 42.7 seviyesinde."]
+    result.medium_term = HorizonOutlook(outlook="NEUTRAL", rationale="Büyüme %88,8 olabilir.")
+    flags = find_unsupported_numbers(_context(), result)
+    assert len(flags) == 2
+    assert any("42.7" in f for f in flags)
+    assert any("88,8" in f for f in flags)
+
+
+def test_numbers_from_verdict_text_given_to_llm_are_supported():
+    context = _context()
+    context.verdict = _verdict()
+    text = (
+        "Hüküm: 3 değerleme yönteminden 2 tanesi pahalı diyor; çarpanlar son 5 yılın "
+        "%12 üstünde ve DCF içsel değeri fiyatın %31 altında."
+    )
+    assert find_unsupported_numbers(context, _result(text)) == []
+
+
+def test_verdict_numbers_are_not_supported_without_a_verdict():
+    # Same text, no verdict in context -> those numbers have no source.
+    text = "DCF içsel değeri fiyatın %31 altında."
+    assert len(find_unsupported_numbers(_context(), _result(text))) == 1
+
+
+def test_raw_verdict_ratios_not_sent_to_llm_are_not_supported():
+    # lens.value=1.12 never reaches the prompt (only the reason text does).
+    context = _context()
+    context.verdict = _verdict()
+    flags = find_unsupported_numbers(context, _result("Çarpan oranı 1,12 kat."))
+    assert len(flags) == 1
+
+
+def test_correction_instructions_list_each_flagged_literal_once():
+    flags = [
+        "unverified number '42.7' in: Net kâr marjı 42.7 seviyesinde.",
+        "unverified number '42.7' in: Yine 42.7.",
+        "unverified number '%88,8' in: Büyüme.",
+    ]
+    assert flagged_literals(flags) == ["42.7", "%88,8"]
+    text = build_correction_instructions(flags)
+    assert "«42.7», «%88,8»" in text
+    assert text.count("42.7") == 1
+    assert "context" in text
+
+
+def test_small_percent_quoted_exactly_as_prompt_shows_it_is_not_flagged():
+    # Code review bulgusu: 0,0175 prompt'a "%1,8" olarak gider; ham değere
+    # göre yuvarlama hatası %2,9 (> %2 tolerans). LLM'in prompt'ta gördüğü
+    # biçimi aynen kullanması halüsinasyon sayılmamalı.
+    ctx = _context()
+    ctx.metrics = FinancialMetrics(as_of_period="2025", net_margin=0.0175, ebitda_margin=0.0123)
+    assert find_unsupported_numbers(ctx, _result("Net kâr marjı %1,8, FAVÖK marjı %1,2.")) == []
+
+
+def test_small_percent_not_in_prompt_is_still_flagged():
+    ctx = _context()
+    ctx.metrics = FinancialMetrics(as_of_period="2025", net_margin=0.0175)
+    assert len(find_unsupported_numbers(ctx, _result("Net kâr marjı %1,4 oldu."))) == 1
+
+
+def test_timestamp_digits_in_prompt_do_not_vouch_for_invented_numbers():
+    # Kararsız test kök nedeni: as_of "…T01:42:07" iken uydurma "42,7"
+    # zaman damgasındaki rakamlarla "destekleniyor" sayılıyordu.
+    ctx = _context()
+    ctx.as_of = dt.datetime(2026, 10, 28, 1, 42, 7, tzinfo=dt.timezone.utc)
+    ctx.market = MarketContext(price=10.0, currency="TRY", market_cap=1000.0,
+                               as_of=dt.datetime(2026, 10, 28, 1, 42, 7, tzinfo=dt.timezone.utc))
+    assert len(find_unsupported_numbers(ctx, _result("Net kâr marjı 42,7 seviyesinde."))) == 1

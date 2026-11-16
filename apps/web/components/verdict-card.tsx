@@ -106,7 +106,7 @@ export function VerdictCard({ verdict }: { verdict: Verdict }) {
               {lens.verdict ? (
                 <Badge tone={PRICE[lens.verdict].tone}>{PRICE[lens.verdict].label}</Badge>
               ) : (
-                <Badge tone="neutral">Veri yok</Badge>
+                <Badge tone="neutral">{lens.not_applicable ? "Uygulanmaz" : "Veri yok"}</Badge>
               )}
               <span className="text-xs text-foreground">{lens.reason}</span>
             </li>

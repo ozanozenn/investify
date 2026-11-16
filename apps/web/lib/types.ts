@@ -54,7 +54,7 @@ export interface FinancialHistoryPoint {
   free_cash_flow: number | null;
 }
 
-export interface ValuationMetrics {
+export interface ValuationMetrics extends ValuationHistoryLabels {
   pe: number | null;
   pb: number | null;
   ev_ebitda: number | null;
@@ -129,16 +129,21 @@ export interface SourceRef {
 
 export type Outlook = "POSITIVE" | "NEUTRAL_POSITIVE" | "NEUTRAL" | "NEUTRAL_NEGATIVE" | "NEGATIVE";
 
+// analysis_json snapshot'ta değişmez saklanır (ADR-005): v4 (rationale)
+// ve v1-v3 (drivers/risks/catalysts/confidence) şekilleri yan yana
+// yaşar — bileşenler hangisi varsa onu gösterir.
 export interface HorizonOutlook {
   outlook: Outlook;
-  confidence: number;
-  drivers: string[];
-  risks: string[];
-  catalysts: string[];
+  rationale?: string; // company-analysis-v4+
+  confidence?: number; // v1-v3, arayüzde gösterilmez (ADR-003)
+  drivers?: string[]; // v1-v3
+  risks?: string[]; // v1-v3
+  catalysts?: string[]; // v1-v3
 }
 
 export interface LLMAnalysis {
   executive_summary: string;
+  what_matters_now?: string[]; // company-analysis-v4+
   short_term: HorizonOutlook;
   medium_term: HorizonOutlook;
   long_term: HorizonOutlook;
@@ -153,6 +158,8 @@ export interface LLMAnalysis {
     llm_is_mocked: boolean;
     prompt_version: string;
     hallucination_flags: string[];
+    hallucination_retry?: boolean; // v4+: bir kez düzeltme denendi mi
+    hallucination_flags_first_attempt?: string[]; // v4+
   };
 }
 
@@ -172,6 +179,9 @@ export interface CompanyAnalysisResponse {
   analysis: LLMAnalysis;
   unsupported_reason: string | null;
   verdict: Verdict | null;
+  // ADR-016 öncesi snapshot'larda yok.
+  quality_flags?: QualityFlagsResult | null;
+  real_growth?: RealGrowth | null;
   versions: Record<string, string>;
   stage_results: Record<string, string> | null;
 }
@@ -209,4 +219,100 @@ export interface Verdict {
   engine_version: string;
   missing_fields: string[];
   unsupported_reason: string | null;
+}
+
+// Değerleme kutucuklarının çarpan bazında tarihsel etiketi ve farkı (oran − 1,
+// kesir). Backend hüküm motoruyla aynı eşiklerle üretir (config/verdict.yaml
+// lenses.history); bu alanlardan önce kaydedilmiş snapshot'larda null gelir.
+export interface ValuationHistoryLabels {
+  pe_vs_history_label: VerdictPrice | null;
+  pb_vs_history_label: VerdictPrice | null;
+  ev_ebitda_vs_history_label: VerdictPrice | null;
+  pe_vs_history_diff: number | null;
+  pb_vs_history_diff: number | null;
+  ev_ebitda_vs_history_diff: number | null;
+}
+
+// --- Kalite bayrakları ve reel büyüme (ADR-016) ---
+
+export type QualitySeverity = "UYARI" | "DIKKAT" | "OLUMLU";
+
+export interface QualityFlagValue {
+  key: string;
+  label: string;
+  value: number;
+  /** "ratio": 0-1 ölçekli oran, "currency": mutlak TL tutarı. */
+  unit: "ratio" | "currency";
+}
+
+export interface QualityFlag {
+  key: string;
+  severity: QualitySeverity;
+  title: string;
+  detail: string;
+  values: QualityFlagValue[];
+}
+
+export interface UnevaluatedQualityCheck {
+  key: string;
+  name: string;
+  reason: string;
+  missing_fields: string[];
+}
+
+export interface QualityFlagsResult {
+  as_of_period: string | null;
+  engine_version: string;
+  flags: QualityFlag[];
+  passed_checks: string[];
+  not_evaluated: UnevaluatedQualityCheck[];
+  missing_fields: string[];
+  /** Kurallar bu şirket türüne uygulanmıyorsa (ör. banka) nedeni; eski snapshot'larda yok. */
+  not_applicable_reason?: string | null;
+}
+
+export interface RealGrowth {
+  as_of_period: string | null;
+  /** 0-1 ölçeğinde (0,335 = %33,5). */
+  cpi_yoy: number | null;
+  cpi_observation_date: string | null;
+  revenue_growth_nominal: number | null;
+  revenue_growth_real: number | null;
+  net_income_growth_nominal: number | null;
+  net_income_growth_real: number | null;
+  missing_fields: string[];
+}
+
+// --- Banka analizi (ADR-014) ---
+// apps/api/app/schemas/bank.py:BankMetrics aynası. Oranlar kesir (0.25 = %25).
+export interface BankMetrics {
+  as_of_period: string;
+  engine_version: string;
+  roe: number | null;
+  roa: number | null;
+  nim_proxy: number | null;
+  cost_income_ratio: number | null;
+  nii_growth_yoy: number | null;
+  net_income_growth_yoy: number | null;
+  equity_growth_yoy: number | null;
+  equity_to_assets: number | null;
+  loan_to_deposit: number | null;
+  provision_to_nii: number | null;
+  latest_net_interest_income: number | null;
+  latest_net_income: number | null;
+  latest_total_assets: number | null;
+  latest_equity: number | null;
+  latest_loans: number | null;
+  latest_deposits: number | null;
+  missing_fields: string[];
+}
+
+// Arayüz birleştirme (declaration merging): yukarıdaki tiplere dokunmadan
+// eklenen opsiyonel alanlar. Eski snapshot'larda bu alanlar yoktur.
+export interface CompanyAnalysisResponse {
+  bank_metrics?: BankMetrics | null;
+}
+
+export interface VerdictLens {
+  not_applicable?: boolean;
 }

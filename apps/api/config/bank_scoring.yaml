@@ -1,0 +1,97 @@
+# Banka skorlama tanımı (ADR-014). Genel şirketler config/scoring.yaml'ı
+# kullanmaya devam eder; bu dosya yalnızca bankalar içindir.
+#
+# Sözleşme scoring.yaml ile aynıdır: her bileşen, `breakpoints:
+# [[metrik_değeri, puan], ...]` üzerinde doğrusal enterpolasyonla puana
+# çevrilir (aralık dışı değerler uçtaki puana sabitlenir). Eksik metrik 0
+# sayılmaz; kategori kalan bileşenlerle 100'e yeniden ölçeklenir
+# (`scoring_engine/engine.py:score_category`). Oranlar kesirdir (0.15 == %15),
+# eşikler nominal TL'dir (scoring.yaml gibi enflasyondan arındırılmaz).
+#
+# Kategori anahtarları genel skorla aynıdır (ScoreResult şeması ve arayüz
+# değişmesin diye). `cash_flow` bankalarda anlamlı değildir: ağırlığı 0'dır
+# ve hiçbir değer üretilmez (aşağıda `excluded_categories`).
+#
+# `cost_income_ratio` (gider/gelir) bilerek skora girmez: paydası yfinance'in
+# "Total Revenue" kalemi; bankalar için anlamı canlı doğrulanana kadar
+# (scripts/verify_bank_fields.py) yalnızca gösterilir.
+#
+# Formül/bileşen değişirse `version` atlanır (≤ 10 karakter: DB sütunu
+# String(10)); sadece eşik değişirse atlanmaz (ADR-012).
+
+version: bank-v1
+
+overall_weights:
+  growth: 0.25
+  profitability: 0.30
+  balance_sheet: 0.25
+  cash_flow: 0.0
+  valuation: 0.20
+
+excluded_categories:
+  cash_flow:
+    label: "Nakit Akışı (bankalarda uygulanmaz)"
+    reason: >-
+      hariç tutuldu: bankanın nakit akışı mevduat ve kredi hareketleriyle
+      dalgalanır, serbest nakit akışı kavramı anlamlı değildir (ağırlık 0)
+
+categories:
+  growth:
+    label: "Büyüme"
+    components:
+      - metric: nii_growth_yoy
+        label: "Yıllık Net Faiz Geliri Büyümesi"
+        max_points: 35
+        breakpoints: [[-0.20, 0], [0.0, 10], [0.20, 24], [0.40, 35]]
+      - metric: net_income_growth_yoy
+        label: "Yıllık Net Kâr Büyümesi"
+        max_points: 35
+        breakpoints: [[-0.30, 0], [0.0, 10], [0.20, 24], [0.40, 35]]
+      - metric: equity_growth_yoy
+        label: "Yıllık Özkaynak Büyümesi"
+        max_points: 30
+        breakpoints: [[-0.10, 0], [0.0, 8], [0.20, 20], [0.40, 30]]
+
+  profitability:
+    label: "Kârlılık"
+    components:
+      - metric: roe
+        label: "Özkaynak Kârlılığı (ROE)"
+        max_points: 45
+        breakpoints: [[0.0, 0], [0.10, 15], [0.20, 30], [0.35, 45]]
+      - metric: roa
+        label: "Aktif Kârlılığı (ROA)"
+        max_points: 30
+        breakpoints: [[0.0, 0], [0.01, 12], [0.02, 22], [0.03, 30]]
+      - metric: nim_proxy
+        label: "Net Faiz Marjı (yaklaşık, toplam aktife göre)"
+        max_points: 25
+        breakpoints: [[0.0, 0], [0.02, 8], [0.04, 18], [0.06, 25]]
+
+  balance_sheet:
+    label: "Bilanço ve Risk"
+    components:
+      - metric: equity_to_assets
+        label: "Özkaynak / Toplam Aktif"
+        max_points: 40
+        breakpoints: [[0.04, 0], [0.07, 15], [0.10, 30], [0.13, 40]]
+      - metric: provision_to_nii
+        label: "Kredi Karşılığı / Net Faiz Geliri"
+        max_points: 35
+        breakpoints: [[0.0, 35], [0.15, 28], [0.30, 15], [0.50, 0]]
+      - metric: loan_to_deposit
+        label: "Kredi / Mevduat"
+        max_points: 25
+        breakpoints: [[0.60, 18], [0.80, 25], [1.00, 22], [1.20, 10], [1.50, 0]]
+
+  valuation:
+    label: "Değerleme"
+    components:
+      - metric: pb_vs_history_ratio
+        label: "PD/DD vs Tarihsel Medyan"
+        max_points: 60
+        breakpoints: [[0.5, 60], [0.8, 51], [1.0, 36], [1.3, 18], [1.8, 0]]
+      - metric: pe_vs_history_ratio
+        label: "F/K vs Tarihsel Medyan"
+        max_points: 40
+        breakpoints: [[0.5, 40], [0.8, 34], [1.0, 25], [1.3, 12], [1.8, 0]]
