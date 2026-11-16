@@ -1,5 +1,5 @@
 # Devir Notu
-_Güncelleme: 2026-11-10 · Branch: `claude/vigilant-galileo-qlaxlf` (push edildi, `development`'a henüz birleştirilmedi)_
+_Güncelleme: 2026-11-16 · `development`'a birleştirildi (PR #3, `0f71d5e`), CI yeşil_
 
 ## Hedef
 V1: yol haritasındaki 1-15. maddeleri tamamlamak (kullanıcı, 2026-10-27).
@@ -34,12 +34,16 @@ Altı paralel agent + entegrasyon; hepsi bu dalda:
   Google News/EVDS/OpenAI kapalı). Adım adım: `docs/V1_DOGRULAMA.md`.
 - `.env.example`'da `AUTH_DEV_BYPASS=true` olabilir (`.env*` okunmadı,
   kural); varsa sahibi `false` yapmalı.
-- Dal `development`'a birleştirilmedi (kullanıcı kararı bekleniyor).
+- README işe alımcılar için yeniden yazıldı (ekran görüntüleri SENTETİK demo
+  verisiyle; gerçek veriyle değiştirilebilir: `docs/images/`). MIT lisansı.
+- Sahibinin yapacakları (araçla yapılamıyor): GitHub About/topics, profilde
+  sabitleme, istenirse varsayılan dalı `main` yapmak. README'deki "How I
+  built this" metnini sahibi doğrulamalı.
 
 ## Sıradaki adımlar
-1. Kullanıcının yönlendirmesi: proje CV'ye profesyonel şekilde eklenecek.
-2. `docs/V1_DOGRULAMA.md` adımları (yerel makinede).
-3. Dalı `development`'a birleştirme + V1 etiketi.
+1. `docs/V1_DOGRULAMA.md` adımları (yerel makinede, gerçek veri).
+2. Gerçek veriyle README ekran görüntülerini yenilemek.
+3. İstenirse V1 etiketi (git tag) / release.
 
 ## Alınan kararlar
 - AL/TUT/SAT **demo** (ADR-011); LLM sinyal vermez.
